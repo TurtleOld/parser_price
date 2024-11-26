@@ -58,7 +58,7 @@ def insert_data(available, product_name, price, price_ozon, original_price, user
         return 'Товар был добавлен на отслеживание'
 
 
-@repeat(every(5).hours)
+@repeat(every(5).minutes)
 def update_price():
     results = messages.find({}, {'_id': 0})
     for result in results:
