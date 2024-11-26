@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "parser_price"
+version = "0.1.0"
+description = ""
+authors = ["Alexander Pavlov <dev@pavlovteam.ru>"]
+readme = "README.md"
+packages = [
+    { include = "parser" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+niquests = "^3.11.1"
+pytelegrambotapi = "^4.24.0"
+python-dotenv = "^1.0.1"
+aiohttp = "^3.11.7"
+pymongo = "^4.10.1"
+schedule = "^1.2.2"
+matplotlib = "^3.9.2"
+
+[tool.poetry.scripts]
+parser = 'parser.engine:main'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
