@@ -1,0 +1,13 @@
+name: task_manager
+
+services:
+  parser:
+    container_name: parser
+    image: ghcr.io/turtleold/parser_price:main
+    volumes:
+      - ${LOCATION:-./app_data}:/app_data/files
+    env_file:
+      - .env
+    environment:
+      TOKEN_TELEGRAM_BOT: ${TOKEN_TELEGRAM_BOT}
+    restart: on-failure
