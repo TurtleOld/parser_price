@@ -10,7 +10,6 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.12"
-niquests = "^3.11.1"
 pytelegrambotapi = "^4.24.0"
 python-dotenv = "^1.0.1"
 aiohttp = "^3.11.7"

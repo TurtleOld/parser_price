@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from io import BytesIO
@@ -51,7 +52,6 @@ def get_price_history(product):
 
 async def send_price_graph(chat_id, product_name, price_history, product_id):
     dates = [d.strftime('%d-%m-%Y %H:%M') for d, _, _ in price_history[10:]]
-    print(dates)
     prices = [p for _, p, _ in price_history[10:]]
     prices_ozon = [p for _, _, p in price_history[10:]]
     plt.figure(figsize=(10, 5))
@@ -109,10 +109,8 @@ async def callback_product(call):
         formatted_info = format_product_info(product)
         keyboard = create_product_keyboard(
             product_index
-        )  # Используем индекс как уникальный идентификатор
-        # Получаем URL изображения товара
+        )
         image_url = product.get('picture')
-        # Отправляем сообщение с фотографией и кнопками
         await bot.send_photo(
             chat_id=user_id,
             photo=image_url,
@@ -151,9 +149,7 @@ async def callback_return_to_card(call):
         await bot.delete_message(user_id, call.message.id)
         keyboard = create_product_keyboard(product_id)
 
-        # Получаем URL изображения товара
         image_url = product.get('picture')
-        # Отправляем сообщение с фотографией и кнопками
         await bot.send_photo(
             chat_id=user_id,
             photo=image_url,
@@ -166,7 +162,7 @@ async def callback_return_to_card(call):
 async def get_url(message):
     user_id = message.chat.id
     result_parse_url = parse_url(message.text)
-    data = get_product_data(result_parse_url)
+    data = await get_product_data(result_parse_url)
     parse = DictionaryParser(data)
     product_name_data = parse.find_key('webProductHeading-3385933-default-1')
     product_name_dict = json.loads(product_name_data[0])
@@ -192,12 +188,6 @@ async def get_url(message):
     await bot.send_message(message.chat.id, result_insert_data)
 
 
-def scheduler():
-    while True:
-        run_pending()
-        time.sleep(1)
-
-
-def start_bot() -> Any:
+async def start_bot() -> Any:
     """Function for start telegram bot"""
-    return bot.infinity_polling()
+    return await bot.infinity_polling()
