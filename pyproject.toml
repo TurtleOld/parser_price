@@ -21,6 +21,14 @@ matplotlib = "^3.9.2"
 [tool.poetry.scripts]
 parser = 'parser.engine:main'
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.8.0"
+isort = "^5.13.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"

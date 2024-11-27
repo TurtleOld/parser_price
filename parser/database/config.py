@@ -1,5 +1,4 @@
-from pymongo import MongoClient, errors
-
+from pymongo import MongoClient
 
 client = MongoClient('localhost', 27017)
 
@@ -12,4 +11,3 @@ messages.create_index('url', unique=True)
 messages.create_index('urls', unique=True)
 messages.create_index('product_name', unique=True)
 messages.create_index('product_names', unique=True)
-

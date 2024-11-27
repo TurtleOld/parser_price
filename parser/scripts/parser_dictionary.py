@@ -1,14 +1,11 @@
 class DictionaryParser:
-
     def __init__(self, data):
         self.data = data
-
 
     def find_key(self, target_key):
         results = []
         self._search(self.data, target_key, results)
         return results
-
 
     def _search(self, current_dict, target_key, results):
         if isinstance(current_dict, dict):

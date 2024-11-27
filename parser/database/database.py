@@ -1,36 +1,50 @@
 import json
 from datetime import datetime
-from schedule import every, repeat, run_pending
-import time
-from pymongo import errors
-
 from parser.bot.config import bot
 from parser.database.config import messages
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from parser.services import clean_and_extract_price
 
+from pymongo import errors
+from schedule import every, repeat
 
-def insert_data(available, product_name, price, price_ozon, original_price, picture, user_id=None, url=None, ):
+
+def insert_data(
+    available,
+    product_name,
+    price,
+    price_ozon,
+    original_price,
+    picture,
+    user_id=None,
+    url=None,
+):
     try:
-        messages.insert_one({
-            'telegram_user_id': user_id,
-            'products': [{
-                'available': available,
-                'url': url,
-                'product_name': product_name,
-                'picture': picture,
-                'prices_history': [{
-                    'price': price,
-                    'price_ozon': price_ozon,
-                    'original_price': original_price,
-                    'updated_at': datetime.now()
-                }],
-                'latest_price': price,
-                'latest_price_ozon': price_ozon,
-                'original_price': original_price
-            }]
-        })
+        messages.insert_one(
+            {
+                'telegram_user_id': user_id,
+                'products': [
+                    {
+                        'available': available,
+                        'url': url,
+                        'product_name': product_name,
+                        'picture': picture,
+                        'prices_history': [
+                            {
+                                'price': price,
+                                'price_ozon': price_ozon,
+                                'original_price': original_price,
+                                'updated_at': datetime.now(),
+                            }
+                        ],
+                        'latest_price': price,
+                        'latest_price_ozon': price_ozon,
+                        'original_price': original_price,
+                    }
+                ],
+            }
+        )
         return 'Товар был добавлен на отслеживание'
     except errors.DuplicateKeyError:
         existing_document = messages.find_one({'telegram_user_id': user_id})
@@ -42,21 +56,27 @@ def insert_data(available, product_name, price, price_ozon, original_price, pict
 
         messages.update_one(
             {'telegram_user_id': user_id},
-            {'$addToSet': {'products': {
-                'available': available,
-                'url': url,
-                'product_name': product_name,
-                'picture': picture,
-                'prices_history': [{
-                    'price': price,
-                    'price_ozon': price_ozon,
-                    'original_price': original_price,
-                    'updated_at': datetime.now()
-                }],
-                'latest_price': price,
-                'latest_price_ozon': price_ozon,
-                'original_price': original_price
-            }}},
+            {
+                '$addToSet': {
+                    'products': {
+                        'available': available,
+                        'url': url,
+                        'product_name': product_name,
+                        'picture': picture,
+                        'prices_history': [
+                            {
+                                'price': price,
+                                'price_ozon': price_ozon,
+                                'original_price': original_price,
+                                'updated_at': datetime.now(),
+                            }
+                        ],
+                        'latest_price': price,
+                        'latest_price_ozon': price_ozon,
+                        'original_price': original_price,
+                    }
+                }
+            },
         )
         return 'Товар был добавлен на отслеживание'
 
@@ -75,7 +95,8 @@ def update_price():
             data = get_product_data(url)
             parse = DictionaryParser(data)
             product_name_data = parse.find_key(
-                'webProductHeading-3385933-default-1')
+                'webProductHeading-3385933-default-1',
+            )
             image = parse.find_key('webGallery-3311629-default-1')
             picture_dict = json.loads(image[0])
             picture = picture_dict['images'][0]['src']
@@ -90,15 +111,17 @@ def update_price():
 
             current_product = messages.find_one(
                 {'telegram_user_id': user_id, 'products.url': url},
-                {'products.$': 1})
+                {'products.$': 1},
+            )
             if current_product:
-                current_price = current_product['products'][0].get(
-                    'latest_price')
+                current_price = current_product['products'][0].get('latest_price')
                 if current_price != price:
-                    message_text = f"Цена на товар '{product_name_dict['title']}' изменилась!\n" \
-                                   f"Старая цена: {current_price}₽\n" \
-                                   f"Новая цена: {price}₽\n" \
-                                   f"Ссылка на товар: https://www.ozon.ru/{url}"
+                    message_text = (
+                        f"Цена на товар '{product_name_dict['title']}' изменилась!\n"
+                        f"Старая цена: {current_price}₽\n"
+                        f"Новая цена: {price}₽\n"
+                        f"Ссылка на товар: https://www.ozon.ru/{url}"
+                    )
                     bot.send_message(user_id, message_text)
 
             # Обновляем данные в базе данных
@@ -109,19 +132,19 @@ def update_price():
                         'price': price,
                         'price_ozon': card_price,
                         'original_price': original_price,
-                        'updated_at': datetime.now()
+                        'updated_at': datetime.now(),
                     }
                 },
                 '$set': {
+                    'products.$.available': available,
                     'products.$.picture': picture,
                     'products.$.latest_price': price,
                     'products.$.latest_price_ozon': card_price,
-                    'products.$.original_price': original_price
-                }
+                    'products.$.original_price': original_price,
+                },
             }
 
             messages.update_one(filter_query, update_query)
-
 
 
 def get_data(user_id):
@@ -136,11 +159,11 @@ def get_data(user_id):
 
 
 def format_product_info(product):
-    availability = "Доступен" if product["available"] else "Недоступен"
-    product_name = product["product_name"]
-    price = product["price"]
-    ozon_price = product["price_ozon"]
-    original_price = product["original_price"]
+    availability = 'Доступен' if product['available'] else 'Недоступен'
+    product_name = product['product_name']
+    price = product['price']
+    ozon_price = product['price_ozon']
+    original_price = product['original_price']
 
     formatted_string = f"""
 Доступность: {availability}

@@ -1,8 +1,6 @@
 import asyncio
 import threading
-
-from parser.bot.messages import start_bot
-from parser.bot.messages import scheduler
+from parser.bot.messages import scheduler, start_bot
 
 
 def main():
