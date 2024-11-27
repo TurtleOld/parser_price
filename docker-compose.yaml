@@ -11,3 +11,15 @@ services:
     environment:
       TOKEN_TELEGRAM_BOT: ${TOKEN_TELEGRAM_BOT}
     restart: on-failure
+
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongo_db
+    ports:
+      - '27017:27017'
+    volumes:
+      - ${LOCATION:-./app_data}/dbdata6:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
