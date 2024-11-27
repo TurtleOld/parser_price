@@ -4,13 +4,14 @@ from schedule import every, repeat, run_pending
 import time
 from pymongo import errors
 
+from parser.bot.config import bot
 from parser.database.config import messages
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from parser.services import clean_and_extract_price
 
 
-def insert_data(available, product_name, price, price_ozon, original_price, user_id=None, url=None, ):
+def insert_data(available, product_name, price, price_ozon, original_price, picture, user_id=None, url=None, ):
     try:
         messages.insert_one({
             'telegram_user_id': user_id,
@@ -18,6 +19,7 @@ def insert_data(available, product_name, price, price_ozon, original_price, user
                 'available': available,
                 'url': url,
                 'product_name': product_name,
+                'picture': picture,
                 'prices_history': [{
                     'price': price,
                     'price_ozon': price_ozon,
@@ -44,6 +46,7 @@ def insert_data(available, product_name, price, price_ozon, original_price, user
                 'available': available,
                 'url': url,
                 'product_name': product_name,
+                'picture': picture,
                 'prices_history': [{
                     'price': price,
                     'price_ozon': price_ozon,
@@ -58,7 +61,7 @@ def insert_data(available, product_name, price, price_ozon, original_price, user
         return 'Товар был добавлен на отслеживание'
 
 
-@repeat(every(5).minutes)
+@repeat(every(1).hours)
 def update_price():
     results = messages.find({}, {'_id': 0})
     for result in results:
@@ -73,6 +76,9 @@ def update_price():
             parse = DictionaryParser(data)
             product_name_data = parse.find_key(
                 'webProductHeading-3385933-default-1')
+            image = parse.find_key('webGallery-3311629-default-1')
+            picture_dict = json.loads(image[0])
+            picture = picture_dict['images'][0]['src']
             product_name_dict = json.loads(product_name_data[0])
 
             f_key = parse.find_key('webPrice-3121879-default-1')
@@ -81,6 +87,19 @@ def update_price():
             price = clean_and_extract_price(data_dict['price'])
             card_price = clean_and_extract_price(data_dict['cardPrice'])
             original_price = clean_and_extract_price(data_dict['originalPrice'])
+
+            current_product = messages.find_one(
+                {'telegram_user_id': user_id, 'products.url': url},
+                {'products.$': 1})
+            if current_product:
+                current_price = current_product['products'][0].get(
+                    'latest_price')
+                if current_price != price:
+                    message_text = f"Цена на товар '{product_name_dict['title']}' изменилась!\n" \
+                                   f"Старая цена: {current_price}₽\n" \
+                                   f"Новая цена: {price}₽\n" \
+                                   f"Ссылка на товар: https://www.ozon.ru/{url}"
+                    bot.send_message(user_id, message_text)
 
             # Обновляем данные в базе данных
             filter_query = {'telegram_user_id': user_id, 'products.url': url}
@@ -94,19 +113,14 @@ def update_price():
                     }
                 },
                 '$set': {
+                    'products.$.picture': picture,
                     'products.$.latest_price': price,
                     'products.$.latest_price_ozon': card_price,
                     'products.$.original_price': original_price
                 }
             }
 
-            result = messages.update_one(filter_query, update_query)
-
-            if result.modified_count > 0:
-                print(f'Цена для товара с URL {url} была успешно обновлена.')
-            else:
-                print(
-                    f'Не удалось найти товар с URL {url} для обновления цены.')
+            messages.update_one(filter_query, update_query)
 
 
 
