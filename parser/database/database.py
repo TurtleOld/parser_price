@@ -19,6 +19,10 @@ def insert_data(
 ):
     with Session() as session:
         try:
+            existing_product = session.query(Product).filter_by(url=url).first()
+            if existing_product:
+                return 'Этот продукт уже добавлен на отслеживание.'
+
             existing_message = session.query(Message).filter_by(telegram_user_id=user_id).first()
 
             if existing_message is None:
