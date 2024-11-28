@@ -1,9 +1,9 @@
-name: task_manager
+name: parser
 
 services:
   parser:
     container_name: parser
-    image: ghcr.io/turtleold/parser_price:main
+    build: .
     volumes:
       - ${LOCATION:-./app_data}:/app_data/files
     env_file:
@@ -11,7 +11,10 @@ services:
     environment:
       TOKEN_TELEGRAM_BOT: ${TOKEN_TELEGRAM_BOT}
     restart: on-failure
-
+    depends_on:
+      - mongodb
+    links:
+      - mongodb
 
   mongodb:
     image: mongo:latest
@@ -23,3 +26,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: password
+
+volumes:
+  app_data:
