@@ -52,6 +52,6 @@ class PriceHistory(Base):
     product = relationship("Product", back_populates="prices_history")
 
 
-engine = create_engine('sqlite:////app_data/telegram_user.db')
+engine = create_engine('sqlite:///telegram_user.db')
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
