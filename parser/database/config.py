@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 
-client = MongoClient('mongodb://root:password@mongodb:27017/')
+client = MongoClient('mongodb://mongodb:27017/')
 
 telegram_user_db = client['telegram_user']
 
