@@ -1,6 +1,4 @@
-import asyncio
 import json
-import time
 from io import BytesIO
 from parser.bot.config import bot
 from parser.database.config import messages
@@ -15,7 +13,6 @@ from parser.services import clean_and_extract_price
 from typing import Any
 
 from matplotlib import pyplot as plt
-from schedule import run_pending
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 

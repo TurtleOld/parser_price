@@ -1,4 +1,3 @@
-import asyncio
 import json
 from datetime import datetime
 from parser.bot.config import bot
@@ -8,7 +7,6 @@ from parser.scripts.product_data import get_product_data
 from parser.services import clean_and_extract_price
 
 from pymongo import errors
-from schedule import every, repeat
 
 
 def insert_data(
