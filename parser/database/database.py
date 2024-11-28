@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 from parser.bot.config import bot
@@ -81,8 +82,7 @@ def insert_data(
         return 'Товар был добавлен на отслеживание'
 
 
-@repeat(every(1).hours)
-def update_price():
+async def update_price():
     results = messages.find({}, {'_id': 0})
     for result in results:
         user_id = result['telegram_user_id']
@@ -92,7 +92,7 @@ def update_price():
             url = product['url']
 
             # Получение актуальных данных о товаре
-            data = get_product_data(url)
+            data = await get_product_data(url)
             parse = DictionaryParser(data)
             product_name_data = parse.find_key(
                 'webProductHeading-3385933-default-1',
@@ -143,8 +143,13 @@ def update_price():
                     'products.$.original_price': original_price,
                 },
             }
-
-            messages.update_one(filter_query, update_query)
+            
+            result = messages.update_one(filter_query, update_query)
+            if result.modified_count > 0:
+                print(f'Цена для товара с URL {url} была успешно обновлена.')
+            else:
+                print(
+                    f'Не удалось найти товар с URL {url} для обновления цены.')
 
 
 def get_data(user_id):
@@ -161,8 +166,8 @@ def get_data(user_id):
 def format_product_info(product):
     availability = 'Доступен' if product['available'] else 'Недоступен'
     product_name = product['product_name']
-    price = product['price']
-    ozon_price = product['price_ozon']
+    price = product['latest_price']
+    ozon_price = product['latest_price_ozon']
     original_price = product['original_price']
 
     formatted_string = f"""
