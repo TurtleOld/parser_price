@@ -18,6 +18,7 @@ ENV PATH="/home/superuser/.local/bin:$PATH"
 RUN curl -sSL https://install.python-poetry.org | python3 - && poetry --version \
 && poetry install
 RUN pip install -r /home/superuser/requirements.txt
+RUN touch /app_data/telegram_user.db && sqlite3 /app_data/telegram_user.db "VACUUM;"
 
 EXPOSE 8000
 
