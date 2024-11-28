@@ -9,7 +9,7 @@ USER superuser
 WORKDIR /home/superuser
 COPY . .
 USER root
-RUN chmod +x /home/superuser/telegram_user.db
+RUN chmod +x /home/superuser/entrypoint.sh
 RUN chmod -R 755 /home/superuser
 RUN chown -R superuser:superuser /home/superuser
 USER superuser
