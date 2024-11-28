@@ -1,12 +1,10 @@
 import json
 from datetime import datetime
 from parser.bot.config import bot
-from parser.database.config import messages
+from parser.database.config import Session, Message, Product, PriceHistory
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from parser.services import clean_and_extract_price
-
-from pymongo import errors
 
 
 def insert_data(
@@ -19,154 +17,112 @@ def insert_data(
     user_id=None,
     url=None,
 ):
-    try:
-        messages.insert_one(
-            {
-                'telegram_user_id': user_id,
-                'products': [
-                    {
-                        'available': available,
-                        'url': url,
-                        'product_name': product_name,
-                        'picture': picture,
-                        'prices_history': [
-                            {
-                                'price': price,
-                                'price_ozon': price_ozon,
-                                'original_price': original_price,
-                                'updated_at': datetime.now(),
-                            }
-                        ],
-                        'latest_price': price,
-                        'latest_price_ozon': price_ozon,
-                        'original_price': original_price,
-                    }
-                ],
-            }
-        )
-        return 'Товар был добавлен на отслеживание'
-    except errors.DuplicateKeyError:
-        existing_document = messages.find_one({'telegram_user_id': user_id})
 
-        if existing_document is not None:
-            existing_urls = [p['url'] for p in existing_document.get('products', [])]
-            if url in existing_urls:
-                return 'Такой товар уже был добавлен'
+    with Session() as session:
+        try:
+            new_message = Message(
+                telegram_user_id=user_id,
+                url=url,
+            )
 
-        messages.update_one(
-            {'telegram_user_id': user_id},
-            {
-                '$addToSet': {
-                    'products': {
-                        'available': available,
-                        'url': url,
-                        'product_name': product_name,
-                        'picture': picture,
-                        'prices_history': [
-                            {
-                                'price': price,
-                                'price_ozon': price_ozon,
-                                'original_price': original_price,
-                                'updated_at': datetime.now(),
-                            }
-                        ],
-                        'latest_price': price,
-                        'latest_price_ozon': price_ozon,
-                        'original_price': original_price,
-                    }
-                }
-            },
-        )
-        return 'Товар был добавлен на отслеживание'
+            new_product = Product(
+                available=available,
+                url=url,
+                product_name=product_name,
+                picture=picture,
+                latest_price=price,
+                latest_price_ozon=price_ozon,
+                original_price=original_price,
+            )
+            new_message.products.append(new_product)  # Добавляем продукт к сообщению
+            session.add(new_message)
+            session.commit()
+            return 'Товар был добавлен на отслеживание'
+
+        except Exception as e:
+            print(e)
+            session.rollback()
+            return 'Ошибка при добавлении товара'
 
 
 async def update_price():
-    results = messages.find({}, {'_id': 0})
-    for result in results:
-        user_id = result['telegram_user_id']
-        products = result.get('products', [])
+    with Session() as session:
+        results = session.query(Message).all()
 
-        for product in products:
-            url = product['url']
+        for result in results:
+            user_id = result.telegram_user_id
 
-            # Получение актуальных данных о товаре
-            data = await get_product_data(url)
-            parse = DictionaryParser(data)
-            product_name_data = parse.find_key(
-                'webProductHeading-3385933-default-1',
-            )
-            image = parse.find_key('webGallery-3311629-default-1')
-            picture_dict = json.loads(image[0])
-            picture = picture_dict['images'][0]['src']
-            product_name_dict = json.loads(product_name_data[0])
+            for product in result.products:
+                url = product.url  # Используем атрибут вместо словаря
+                data = await get_product_data(url)
+                parse = DictionaryParser(data)
 
-            f_key = parse.find_key('webPrice-3121879-default-1')
-            data_dict = json.loads(f_key[0])
-            available = data_dict['isAvailable']
-            price = clean_and_extract_price(data_dict['price'])
-            card_price = clean_and_extract_price(data_dict['cardPrice'])
-            original_price = clean_and_extract_price(data_dict['originalPrice'])
+                product_name_data = parse.find_key('webProductHeading-3385933-default-1')
+                image = parse.find_key('webGallery-3311629-default-1')
+                picture_dict = json.loads(image[0])
+                picture = picture_dict['images'][0]['src']
+                product_name_dict = json.loads(product_name_data[0])
+                f_key = parse.find_key('webPrice-3121879-default-1')
+                data_dict = json.loads(f_key[0])
+                available = data_dict['isAvailable']
+                price = clean_and_extract_price(data_dict['price'])
+                card_price = clean_and_extract_price(data_dict['cardPrice'])
+                original_price = clean_and_extract_price(data_dict['originalPrice'])
 
-            current_product = messages.find_one(
-                {'telegram_user_id': user_id, 'products.url': url},
-                {'products.$': 1},
-            )
-            if current_product:
-                current_price = current_product['products'][0].get('latest_price')
-                if current_price != price:
+                # Обновляем информацию о продукте
+                product.latest_price = price
+                product.latest_price_ozon = card_price
+                product.original_price = original_price
+                product.available = available
+                product.picture = picture
+
+                # Добавляем новую запись в историю цен
+                new_price_history_entry = PriceHistory(
+                    price=price,
+                    price_ozon=card_price,
+                    original_price=original_price,
+                    updated_at=datetime.now()
+                )
+                product.prices_history.append(new_price_history_entry)
+
+                # Обновляем продукт в базе данных
+                if product.latest_price != price:
                     message_text = (
                         f"Цена на товар '{product_name_dict['title']}' изменилась!\n"
-                        f"Старая цена: {current_price}₽\n"
+                        f"Старая цена: {product.latest_price}₽\n"
                         f"Новая цена: {price}₽\n"
                         f"Ссылка на товар: https://www.ozon.ru/{url}"
                     )
-                    bot.send_message(user_id, message_text)
+                    await bot.send_message(user_id, message_text)
 
-            # Обновляем данные в базе данных
-            filter_query = {'telegram_user_id': user_id, 'products.url': url}
-            update_query = {
-                '$push': {
-                    'products.$.prices_history': {
-                        'price': price,
-                        'price_ozon': card_price,
-                        'original_price': original_price,
-                        'updated_at': datetime.now(),
-                    }
-                },
-                '$set': {
-                    'products.$.available': available,
-                    'products.$.picture': picture,
-                    'products.$.latest_price': price,
-                    'products.$.latest_price_ozon': card_price,
-                    'products.$.original_price': original_price,
-                },
-            }
 
-            result = messages.update_one(filter_query, update_query)
-            if result.modified_count > 0:
-                print(f'Цена для товара с URL {url} была успешно обновлена.')
-            else:
-                print(f'Не удалось найти товар с URL {url} для обновления цены.')
+
+        session.commit()
 
 
 def get_data(user_id):
-    results = messages.find({'telegram_user_id': user_id}, {'_id': 0})
-    all_products = []
+    with Session() as session:
+        results = session.query(Message).filter(Message.telegram_user_id == user_id).all()
 
-    for result in results:
-        for product in result.get('products'):
-            formatted_info = format_product_info(product)
-            all_products.append(formatted_info)
-    return all_products
+        all_products = []
+
+        for result in results:
+            for product in result.products:
+                formatted_info = format_product_info(product)
+                all_products.append(formatted_info)
+
+        return all_products
 
 
 def format_product_info(product):
-    availability = 'Доступен' if product['available'] else 'Недоступен'
-    product_name = product['product_name']
-    price = product['latest_price']
-    ozon_price = product['latest_price_ozon']
-    original_price = product['original_price']
+    # Проверка наличия необходимых данных о продукте
+    availability = 'Доступен' if product.available else 'Недоступен'
+    product_name = product.product_name if product.product_name else 'Неизвестный товар'
+    price = product.latest_price if product.latest_price is not None else 'Неизвестная цена'
+    ozon_price = product.latest_price_ozon if product.latest_price_ozon is not None else 'Неизвестная цена'
+    original_price = product.original_price if product.original_price is not None else 'Неизвестная цена'
 
+    # Форматируем информацию о продукте
     formatted_string = f"""
 Доступность: {availability}
 Наименование товара: {product_name}

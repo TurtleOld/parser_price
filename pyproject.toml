@@ -10,12 +10,13 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pytelegrambotapi = "^4.24.0"
 python-dotenv = "^1.0.1"
 aiohttp = "^3.11.7"
 pymongo = "^4.10.1"
 schedule = "^1.2.2"
 matplotlib = "^3.9.2"
+sqlalchemy = "^2.0.36"
+pytelegrambotapi = "^4.24.0"
 
 [tool.poetry.scripts]
 parser = 'parser.engine:main'
