@@ -17,25 +17,40 @@ def insert_data(
     user_id=None,
     url=None,
 ):
-
     with Session() as session:
         try:
-            new_message = Message(
-                telegram_user_id=user_id,
-                url=url,
-            )
+            existing_message = session.query(Message).filter_by(telegram_user_id=user_id).first()
 
-            new_product = Product(
-                available=available,
-                url=url,
-                product_name=product_name,
-                picture=picture,
-                latest_price=price,
-                latest_price_ozon=price_ozon,
-                original_price=original_price,
-            )
-            new_message.products.append(new_product)  # Добавляем продукт к сообщению
-            session.add(new_message)
+            if existing_message is None:
+                new_message = Message(
+                    telegram_user_id=user_id,
+                    url=url,
+                )
+                session.add(new_message)
+                session.flush()
+
+                new_product = Product(
+                    available=available,
+                    url=url,
+                    product_name=product_name,
+                    picture=picture,
+                    latest_price=price,
+                    latest_price_ozon=price_ozon,
+                    original_price=original_price,
+                )
+                new_message.products.append(new_product)
+            else:
+                new_product = Product(
+                    available=available,
+                    url=url,
+                    product_name=product_name,
+                    picture=picture,
+                    latest_price=price,
+                    latest_price_ozon=price_ozon,
+                    original_price=original_price,
+                )
+                existing_message.products.append(new_product)
+
             session.commit()
             return 'Товар был добавлен на отслеживание'
 
