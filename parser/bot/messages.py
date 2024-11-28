@@ -107,9 +107,7 @@ async def callback_product(call):
     if result:
         product = result['products'][product_index]
         formatted_info = format_product_info(product)
-        keyboard = create_product_keyboard(
-            product_index
-        )
+        keyboard = create_product_keyboard(product_index)
         image_url = product.get('picture')
         await bot.send_photo(
             chat_id=user_id,

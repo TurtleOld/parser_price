@@ -10,9 +10,8 @@ async def get_product_data(url):
                 if response.status == 200:
                     return await response.json()
                 else:
-                    print(f'Ошибка: Статус код {response.status_code}')
+                    print(f'Ошибка: {response.status}')
                     return None
     except Exception as e:
         print(f'Ошибка при выполнении запроса: {e}')
         return None
-    

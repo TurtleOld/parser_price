@@ -143,13 +143,12 @@ async def update_price():
                     'products.$.original_price': original_price,
                 },
             }
-            
+
             result = messages.update_one(filter_query, update_query)
             if result.modified_count > 0:
                 print(f'Цена для товара с URL {url} была успешно обновлена.')
             else:
-                print(
-                    f'Не удалось найти товар с URL {url} для обновления цены.')
+                print(f'Не удалось найти товар с URL {url} для обновления цены.')
 
 
 def get_data(user_id):
