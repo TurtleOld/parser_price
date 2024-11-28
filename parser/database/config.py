@@ -3,11 +3,9 @@ from sqlalchemy import create_engine, Column, String, Integer, UniqueConstraint,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-# Определяем базовый класс
+
 Base = declarative_base()
 
-
-# Определяем модель для таблицы messages
 class Message(Base):
     __tablename__ = 'messages'
 
@@ -29,7 +27,7 @@ class Product(Base):
     message_id = Column(Integer, ForeignKey('messages.id'))
 
     available = Column(
-        String)  # или Boolean, в зависимости от того, как вы хотите это хранить
+        String)
 
     url = Column(String)
 
@@ -54,11 +52,6 @@ class PriceHistory(Base):
     product = relationship("Product", back_populates="prices_history")
 
 
-# Подключаемся к SQLite
-engine = create_engine('sqlite:///telegram_user.db')
-
-# Создаем таблицы
+engine = create_engine('sqlite:////app_data/telegram_user.db')
 Base.metadata.create_all(engine)
-
-# Создаем сессию
 Session = sessionmaker(bind=engine)

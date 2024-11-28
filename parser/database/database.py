@@ -95,14 +95,7 @@ async def update_price():
                 product.available = available
                 product.picture = picture
 
-                # Добавляем новую запись в историю цен
-                new_price_history_entry = PriceHistory(
-                    price=price,
-                    price_ozon=card_price,
-                    original_price=original_price,
-                    updated_at=datetime.now()
-                )
-                product.prices_history.append(new_price_history_entry)
+
 
                 # Обновляем продукт в базе данных
                 if product.latest_price != price:
@@ -113,7 +106,14 @@ async def update_price():
                         f"Ссылка на товар: https://www.ozon.ru/{url}"
                     )
                     await bot.send_message(user_id, message_text)
-
+                # Добавляем новую запись в историю цен
+                new_price_history_entry = PriceHistory(
+                    price=price,
+                    price_ozon=card_price,
+                    original_price=original_price,
+                    updated_at=datetime.now()
+                )
+                product.prices_history.append(new_price_history_entry)
 
 
         session.commit()
