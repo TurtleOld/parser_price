@@ -1,10 +1,10 @@
 from pymongo import MongoClient
 
-username = 'root'
-password = 'password'
+username = 'mydbuser'
+password = 'mydbpass'
 
 # Подключаемся к MongoDB с использованием URI подключения
-client = MongoClient(f'mongodb://{username}:{password}@mongodb:27017/')
+client = MongoClient(f'mongodb://{username}:{password}@mongodb:27017/mydatabase')
 
 telegram_user_db = client['telegram_user']
 
