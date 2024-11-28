@@ -4,6 +4,7 @@ services:
   parser:
     container_name: parser
     image: ghcr.io/turtleold/parser_price:main
+    build: .
     volumes:
       - ${LOCATION:-./app_data}:/app_data/files
       - ${LOCATION:-./app_data}/telegram_user.db:/app_data/telegram_user.db:rw
