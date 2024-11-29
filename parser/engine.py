@@ -1,6 +1,5 @@
 import asyncio
 import os
-
 from parser.bot.messages import start_bot
 from parser.database.config import init_db
 from parser.database.database import update_price

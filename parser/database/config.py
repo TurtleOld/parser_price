@@ -1,16 +1,25 @@
-import asyncio
+import os
 
-from sqlalchemy import Column, String, Integer, ForeignKey, Float, DateTime, \
-    MetaData, Boolean
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, \
-    async_sessionmaker, AsyncAttrs
-from sqlalchemy.orm import relationship, DeclarativeBase
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+)
+from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, relationship
 
 
 class Base(AsyncAttrs, DeclarativeBase):
     pass
 
+
 metadata = MetaData()
+
 
 class Message(Base):
     __tablename__ = 'messages'
@@ -18,8 +27,9 @@ class Message(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     telegram_user_id = Column(Integer, unique=True)
     url = Column(String, unique=True)
-    products = relationship("Product", back_populates="message",
-                            cascade="all, delete-orphan")
+    products = relationship(
+        'Product', back_populates='message', cascade='all, delete-orphan'
+    )
 
 
 class Product(Base):
@@ -34,9 +44,13 @@ class Product(Base):
     latest_price = Column(Float)
     latest_price_ozon = Column(Float)
     original_price = Column(Float)
-    message = relationship("Message", back_populates="products")
-    prices_history = relationship("PriceHistory", back_populates="product",
-                                  cascade="all, delete-orphan",)
+    message = relationship('Message', back_populates='products')
+    prices_history = relationship(
+        'PriceHistory',
+        back_populates='product',
+        cascade='all, delete-orphan',
+    )
+
 
 class PriceHistory(Base):
     __tablename__ = 'price_history'
@@ -46,14 +60,15 @@ class PriceHistory(Base):
     price = Column(Float)
     price_ozon = Column(Float)
     original_price = Column(Float)
-    product = relationship("Product", back_populates="prices_history")
+    product = relationship('Product', back_populates='prices_history')
 
 
 engine = create_async_engine(
-    'postgresql+asyncpg://postgres:postgres@localhost:5432/parser',
+    os.environ.get('DATABASE_URL'),
     pool_size=20,
     max_overflow=10,
 )
+
 
 async def init_db():
     async with engine.begin() as conn:

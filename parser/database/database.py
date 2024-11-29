@@ -1,25 +1,24 @@
 import json
 from datetime import datetime
-
-import icecream
-from sqlalchemy import select
-
 from parser.bot.config import bot
-from parser.database.config import AsyncSessionLocal, Message, Product, PriceHistory
+from parser.database.config import AsyncSessionLocal, Message, PriceHistory, Product
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from parser.services import clean_and_extract_price
 
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
 
 async def insert_data(
-        available,
-        product_name,
-        price,
-        price_ozon,
-        original_price,
-        picture,
-        user_id=None,
-        url=None,
+    available,
+    product_name,
+    price,
+    price_ozon,
+    original_price,
+    picture,
+    user_id=None,
+    url=None,
 ):
     async with AsyncSessionLocal() as session:
         try:
@@ -32,7 +31,7 @@ async def insert_data(
                 return 'Этот продукт уже добавлен на отслеживание.'
 
             existing_message = await session.execute(
-                select(Message).where(Message.telegram_user_id == str(user_id))
+                select(Message).where(Message.telegram_user_id == user_id)
             )
             existing_message = existing_message.scalars().first()
             if existing_message is None:
@@ -52,7 +51,7 @@ async def insert_data(
                     latest_price_ozon=price_ozon,
                     original_price=original_price,
                     picture=picture,
-                    message=new_message
+                    message=new_message,
                 )
                 session.add(new_product)
                 await session.commit()
@@ -66,7 +65,7 @@ async def insert_data(
                     latest_price_ozon=price_ozon,
                     original_price=original_price,
                     picture=picture,
-                    message=existing_message
+                    message=existing_message,
                 )
                 session.add(new_product)
                 await session.commit()
@@ -78,20 +77,22 @@ async def insert_data(
 
 async def update_price():
     async with AsyncSessionLocal() as session:
-        results = await session.execute(select(Message))
+        results = await session.execute(
+            select(Message).options(
+                selectinload(Message.products).selectinload(Product.prices_history)
+            )
+        )
         messages = results.scalars().all()
 
         for message in messages:
             user_id = message.telegram_user_id
-            icecream.ic(message.url)
-            icecream.ic(results.scalars().all())
             for product in message.products:
-
-                url = product.url
+                url = message.url
                 data = await get_product_data(url)
                 parse = DictionaryParser(data)
-
-                product_name_data = parse.find_key('webProductHeading-3385933-default-1')
+                product_name_data = parse.find_key(
+                    'webProductHeading-3385933-default-1'
+                )
                 image = parse.find_key('webGallery-3311629-default-1')
                 picture_dict = json.loads(image[0])
                 picture = picture_dict['images'][0]['src']
@@ -122,7 +123,7 @@ async def update_price():
                     price=price,
                     price_ozon=card_price,
                     original_price=original_price,
-                    updated_at=datetime.now()
+                    updated_at=datetime.now(),
                 )
                 product.prices_history.append(new_price_history_entry)
 
@@ -131,7 +132,9 @@ async def update_price():
 
 async def get_data(user_id):
     async with AsyncSessionLocal() as session:
-        results = session.query(Message).filter(Message.telegram_user_id == user_id).all()
+        results = (
+            session.query(Message).filter(Message.telegram_user_id == user_id).all()
+        )
 
         all_products = []
 
@@ -147,9 +150,19 @@ def format_product_info(product):
     # Проверка наличия необходимых данных о продукте
     availability = 'Доступен' if product.available else 'Недоступен'
     product_name = product.product_name if product.product_name else 'Неизвестный товар'
-    price = product.latest_price if product.latest_price is not None else 'Неизвестная цена'
-    ozon_price = product.latest_price_ozon if product.latest_price_ozon is not None else 'Неизвестная цена'
-    original_price = product.original_price if product.original_price is not None else 'Неизвестная цена'
+    price = (
+        product.latest_price if product.latest_price is not None else 'Неизвестная цена'
+    )
+    ozon_price = (
+        product.latest_price_ozon
+        if product.latest_price_ozon is not None
+        else 'Неизвестная цена'
+    )
+    original_price = (
+        product.original_price
+        if product.original_price is not None
+        else 'Неизвестная цена'
+    )
 
     # Форматируем информацию о продукте
     formatted_string = f"""

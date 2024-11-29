@@ -1,6 +1,22 @@
 name: parser
 
 services:
+  db:
+    image: postgres:latest
+    volumes:
+      - ${LOCATION:-./app_data}/postgres:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-parser}
+    ports:
+      - "5435:5432"
+    restart: always
+    networks:
+      - default
+
   parser:
     container_name: parser
     build:
@@ -12,6 +28,7 @@ services:
     env_file:
       - .env
     environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@db:5432/parser}
       TZ: Europe/Moscow
       TOKEN_TELEGRAM_BOT: ${TOKEN_TELEGRAM_BOT}
     restart: on-failure
