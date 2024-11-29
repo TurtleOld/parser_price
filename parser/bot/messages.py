@@ -1,7 +1,10 @@
 import json
 from io import BytesIO
+
+import icecream
+
 from parser.bot.config import bot
-from parser.database.config import Session, Message
+from parser.database.config import AsyncSessionLocal, Message
 from parser.database.database import (
     format_product_info,
     insert_data,
@@ -79,7 +82,7 @@ from telebot import types  # Убедитесь, что вы импортиро�
 @bot.message_handler(commands=['get_prices'])
 async def handle_get_prices(message):
     user_id = message.chat.id
-    with Session() as session:
+    async with AsyncSessionLocal() as session:
         # Извлекаем сообщения пользователя
         results = session.query(Message).filter(
             Message.telegram_user_id == user_id).all()
@@ -109,7 +112,7 @@ async def callback_product(call):
     message_id, product_index = map(int, call.data.split('_')[1:3])
     user_id = call.message.chat.id
 
-    with Session() as session:
+    async with AsyncSessionLocal() as session:
         # Извлекаем сообщение по telegram_user_id
         result = session.query(Message).filter(Message.telegram_user_id == user_id).first()
 
@@ -136,7 +139,7 @@ async def callback_view_graph(call):
     product_index = int(call.data.split('_')[2])
     user_id = call.message.chat.id
 
-    with Session() as session:
+    async with AsyncSessionLocal() as session:
         # Извлекаем сообщение по telegram_user_id
         result = session.query(Message).filter(
             Message.telegram_user_id == user_id).first()
@@ -161,7 +164,7 @@ async def callback_return_to_card(call):
     product_id = int(call.data.split('_')[3])
     user_id = call.message.chat.id
 
-    with Session() as session:
+    async with AsyncSessionLocal() as session:
         # Извлекаем сообщение пользователя по его ID
         result = session.query(Message).filter(
             Message.telegram_user_id == user_id).first()
@@ -194,20 +197,20 @@ async def callback_return_to_card(call):
 async def get_url(message):
     user_id = message.chat.id
     result_parse_url = parse_url(message.text)
+    icecream.ic(result_parse_url)
 
     # Получаем данные о продукте
     data = await get_product_data(result_parse_url)
 
-    # Проверяем, были ли получены данные
+
     if not data:
-        await bot.send_message(user_id,
-                               "Не удалось получить данные о продукте.")
+        await bot.send_message(user_id, "Не удалось получить данные о продукте.",)
         return
 
     parse = DictionaryParser(data)
 
-    # Извлекаем название продукта
     product_name_data = parse.find_key('webProductHeading-3385933-default-1')
+    icecream.ic(product_name_data)
     if not product_name_data:
         await bot.send_message(user_id, "Не удалось найти название продукта.")
         return
@@ -234,8 +237,7 @@ async def get_url(message):
     card_price = clean_and_extract_price(data_dict['cardPrice'])
     original_price = clean_and_extract_price(data_dict['originalPrice'])
 
-    # Вставляем данные в базу
-    result_insert_data = insert_data(
+    result_insert_data = await insert_data(
         available=available,
         user_id=user_id,
         url=result_parse_url,

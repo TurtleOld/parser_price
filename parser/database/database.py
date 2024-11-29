@@ -1,78 +1,93 @@
 import json
 from datetime import datetime
+
+import icecream
+from sqlalchemy import select
+
 from parser.bot.config import bot
-from parser.database.config import Session, Message, Product, PriceHistory
+from parser.database.config import AsyncSessionLocal, Message, Product, PriceHistory
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from parser.services import clean_and_extract_price
 
 
-def insert_data(
-    available,
-    product_name,
-    price,
-    price_ozon,
-    original_price,
-    picture,
-    user_id=None,
-    url=None,
+async def insert_data(
+        available,
+        product_name,
+        price,
+        price_ozon,
+        original_price,
+        picture,
+        user_id=None,
+        url=None,
 ):
-    with Session() as session:
+    async with AsyncSessionLocal() as session:
         try:
-            existing_product = session.query(Product).filter_by(url=url).first()
+            # Проверяем наличие продукта по URL
+            existing_product = await session.execute(
+                select(Product).where(Product.url == url)
+            )
+            existing_product = existing_product.scalars().first()
             if existing_product:
                 return 'Этот продукт уже добавлен на отслеживание.'
 
-            existing_message = session.query(Message).filter_by(telegram_user_id=user_id).first()
-
+            existing_message = await session.execute(
+                select(Message).where(Message.telegram_user_id == str(user_id))
+            )
+            existing_message = existing_message.scalars().first()
             if existing_message is None:
+                # Если сообщение отсутствует, создаем новое
                 new_message = Message(
                     telegram_user_id=user_id,
                     url=url,
                 )
                 session.add(new_message)
-                session.flush()
+                await session.flush()
 
+                # Добавляем новый продукт к сообщению
                 new_product = Product(
                     available=available,
-                    url=url,
                     product_name=product_name,
-                    picture=picture,
                     latest_price=price,
                     latest_price_ozon=price_ozon,
                     original_price=original_price,
+                    picture=picture,
+                    message=new_message
                 )
-                new_message.products.append(new_product)
+                session.add(new_product)
+                await session.commit()
+                return f'Продукт {product_name} успешно добавлен на отслеживание.'
             else:
+                # Если сообщение существует, добавляем продукт к существующему сообщению
                 new_product = Product(
                     available=available,
-                    url=url,
                     product_name=product_name,
-                    picture=picture,
                     latest_price=price,
                     latest_price_ozon=price_ozon,
                     original_price=original_price,
+                    picture=picture,
+                    message=existing_message
                 )
-                existing_message.products.append(new_product)
-
-            session.commit()
-            return 'Товар был добавлен на отслеживание'
-
+                session.add(new_product)
+                await session.commit()
+                return f'Продукт {product_name} успешно добавлен на отслеживание.'
         except Exception as e:
-            print(e)
-            session.rollback()
-            return 'Ошибка при добавлении товара'
+            await session.rollback()
+            return f'Произошла ошибка добавления товара {e}'
 
 
 async def update_price():
-    with Session() as session:
-        results = session.query(Message).all()
+    async with AsyncSessionLocal() as session:
+        results = await session.execute(select(Message))
+        messages = results.scalars().all()
 
-        for result in results:
-            user_id = result.telegram_user_id
+        for message in messages:
+            user_id = message.telegram_user_id
+            icecream.ic(message.url)
+            icecream.ic(results.scalars().all())
+            for product in message.products:
 
-            for product in result.products:
-                url = product.url  # Используем атрибут вместо словаря
+                url = product.url
                 data = await get_product_data(url)
                 parse = DictionaryParser(data)
 
@@ -88,16 +103,12 @@ async def update_price():
                 card_price = clean_and_extract_price(data_dict['cardPrice'])
                 original_price = clean_and_extract_price(data_dict['originalPrice'])
 
-                # Обновляем информацию о продукте
                 product.latest_price = price
                 product.latest_price_ozon = card_price
                 product.original_price = original_price
                 product.available = available
                 product.picture = picture
 
-
-
-                # Обновляем продукт в базе данных
                 if product.latest_price != price:
                     message_text = (
                         f"Цена на товар '{product_name_dict['title']}' изменилась!\n"
@@ -106,7 +117,7 @@ async def update_price():
                         f"Ссылка на товар: https://www.ozon.ru/{url}"
                     )
                     await bot.send_message(user_id, message_text)
-                # Добавляем новую запись в историю цен
+
                 new_price_history_entry = PriceHistory(
                     price=price,
                     price_ozon=card_price,
@@ -115,12 +126,11 @@ async def update_price():
                 )
                 product.prices_history.append(new_price_history_entry)
 
+        await session.commit()
 
-        session.commit()
 
-
-def get_data(user_id):
-    with Session() as session:
+async def get_data(user_id):
+    async with AsyncSessionLocal() as session:
         results = session.query(Message).filter(Message.telegram_user_id == user_id).all()
 
         all_products = []
