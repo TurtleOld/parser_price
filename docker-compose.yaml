@@ -28,7 +28,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@db:5432/parser}
+      DATABASE_URL: ${DATABASE_URL:-postgres+asyncpg://postgres:postgres@db:5432/parser}
       TZ: Europe/Moscow
       TOKEN_TELEGRAM_BOT: ${TOKEN_TELEGRAM_BOT}
     restart: on-failure
