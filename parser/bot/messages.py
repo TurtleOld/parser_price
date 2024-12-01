@@ -1,8 +1,5 @@
 import json
 from io import BytesIO
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
 from parser.bot.config import bot
 from parser.database.config import AsyncSessionLocal, Message, PriceHistory
 from parser.database.database import format_product_info, insert_data
@@ -13,6 +10,8 @@ from parser.services import clean_and_extract_price
 from typing import Any
 
 from matplotlib import pyplot as plt
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
@@ -44,8 +43,7 @@ def create_return_to_card_keyboard(product_id):
 async def get_price_history(session: AsyncSessionLocal, product):
     # Получаем историю цен из БД асинхронно
     result = await session.execute(
-        select(PriceHistory)
-        .filter(PriceHistory.product_id == product.id)
+        select(PriceHistory).filter(PriceHistory.product_id == product.id)
     )
     price_history_entries = result.scalars().all()
 
@@ -91,33 +89,30 @@ async def handle_get_prices(message):
         # Используем SQLAlchemy 2.x API для выполнения асинхронного запроса
         results = await session.execute(
             select(Message)
-            .options(selectinload(
-                Message.products))  # Предзагрузка связанных продуктов
+            .options(selectinload(Message.products))  # Предзагрузка связанных продуктов
             .filter(Message.telegram_user_id == user_id)
         )
         messages = results.scalars().all()  # Получение всех результатов
-        
+
         keyboard = InlineKeyboardMarkup()
-        
+
         if messages:
             # Построение кнопок для каждого продукта
             for msg in messages:
                 for index, product in enumerate(msg.products):
-                    product_name = product.product_name or "Без названия"
+                    product_name = product.product_name or 'Без названия'
                     button = InlineKeyboardButton(
-                        text=product_name,
-                        callback_data=f'product_{msg.id}_{index}'
+                        text=product_name, callback_data=f'product_{msg.id}_{index}'
                     )
                     keyboard.add(button)
-            
+
             # Отправляем сообщение с клавиатурой
             await bot.send_message(
                 chat_id=user_id, text='Выберите товар:', reply_markup=keyboard
             )
         else:
             # Если товаров нет, отправляем уведомление
-            await bot.send_message(chat_id=user_id,
-                                   text='Нет доступных товаров.')
+            await bot.send_message(chat_id=user_id, text='Нет доступных товаров.')
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('product_'))
@@ -158,7 +153,7 @@ async def callback_product(call):
 async def callback_view_graph(call):
     product_index = int(call.data.split('_')[2])
     user_id = call.message.chat.id
-    
+
     async with AsyncSessionLocal() as session:
         # Извлечение сообщения и связанных продуктов
         result = await session.execute(
@@ -167,15 +162,18 @@ async def callback_view_graph(call):
             .filter(Message.telegram_user_id == user_id)
         )
         message = result.scalars().first()
-        
+
         if result and product_index < len(message.products):
             product = message.products[product_index]
             price_history = await get_price_history(session, product)
-            
+
             await bot.delete_message(user_id, call.message.id)
-            
+
             await send_price_graph(
-                user_id, product.product_name, price_history, product_index,
+                user_id,
+                product.product_name,
+                price_history,
+                product_index,
             )
         else:
             await bot.send_message(user_id, 'Не удалось найти товар.')
@@ -185,7 +183,7 @@ async def callback_view_graph(call):
 async def callback_return_to_card(call):
     product_id = int(call.data.split('_')[3])
     user_id = call.message.chat.id
-    
+
     async with AsyncSessionLocal() as session:
         # Получение сообщения с продуктами пользователя
         result = await session.execute(
@@ -194,19 +192,19 @@ async def callback_return_to_card(call):
             .filter(Message.telegram_user_id == user_id)
         )
         message = result.scalars().first()
-        
+
         if message and 0 <= product_id < len(message.products):
             product = message.products[product_id]
-            
+
             # Форматирование информации о продукте
             formatted_info = format_product_info(product)
-            
+
             # Удаление предыдущего сообщения
             await bot.delete_message(user_id, call.message.id)
-            
+
             # Создание клавиатуры для продукта
             keyboard = create_product_keyboard(product_id)
-            
+
             # Отправка карточки с продуктом
             await bot.send_photo(
                 chat_id=user_id,

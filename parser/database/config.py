@@ -1,20 +1,14 @@
 import os
 
-import icecream
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    MetaData,
-    String,
-)
-from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, relationship
 from dotenv import load_dotenv
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
+                        MetaData, String)
+from sqlalchemy.ext.asyncio import (AsyncAttrs, async_sessionmaker,
+                                    create_async_engine)
+from sqlalchemy.orm import DeclarativeBase, relationship
+
 load_dotenv()
+
 
 class Base(AsyncAttrs, DeclarativeBase):
     pass

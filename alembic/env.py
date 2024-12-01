@@ -2,18 +2,14 @@ import asyncio
 import os
 import re
 from logging.config import fileConfig
-
-import icecream
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import create_async_pool_from_url, \
-    create_async_engine
-
-from alembic import context
-
 from parser.database.config import Base
 
 from dotenv import load_dotenv
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import (create_async_engine)
+
+from alembic import context
+
 load_dotenv()
 
 # this is the Alembic Config object, which provides
@@ -48,20 +44,16 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    
-    url_token = {
-        'DATABASE_URL': os.getenv('DATABASE_URL')
-    }
-    url = config.get_main_option("sqlalchemy.url")
-    url = re.sub(r"\${(.+?)}", lambda m: url_token[m.group(1)], url)
-    
-    icecream.ic(url_token)
-    
+
+    url_token = {'DATABASE_URL': os.getenv('DATABASE_URL')}
+    url = config.get_main_option('sqlalchemy.url')
+    url = re.sub(r'\${(.+?)}', lambda m: url_token[m.group(1)], url)
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
+        dialect_opts={'paramstyle': 'named'},
     )
 
     with context.begin_transaction():
@@ -80,7 +72,7 @@ async def run_async_migrations() -> None:
     and associate a connection with the context.
 
     """
-    
+
     connectable = create_async_engine(url=os.getenv('DATABASE_URL'))
 
     async with connectable.connect() as connection:

@@ -1,7 +1,8 @@
 import json
 from datetime import datetime
 from parser.bot.config import bot
-from parser.database.config import AsyncSessionLocal, Message, PriceHistory, Product
+from parser.database.config import (AsyncSessionLocal, Message, PriceHistory,
+                                    Product)
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from parser.services import clean_and_extract_price
@@ -24,8 +25,9 @@ async def insert_data(
         try:
             # Проверка существования продукта по URL и telegram_user_id
             existing_product = await session.execute(
-                select(Message)
-                    .where((Message.url == url) & (Message.telegram_user_id == user_id))
+                select(Message).where(
+                    (Message.url == url) & (Message.telegram_user_id == user_id)
+                )
             )
             existing_product = existing_product.scalars().first()
             if existing_product:
