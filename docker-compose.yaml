@@ -27,12 +27,23 @@ services:
       - ${LOCATION:-./app_data}/telegram_user.db:/app_data/telegram_user.db:rw
     env_file:
       - .env
-    command: ["sh", "-c", "alembic upgrade head && poetry run parser"]
+    command: sh -c "alembic upgrade head && poetry run parser"
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres+asyncpg://postgres:postgres@db:5432/parser}
       TZ: Europe/Moscow
       TOKEN_TELEGRAM_BOT: ${TOKEN_TELEGRAM_BOT}
     restart: on-failure
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+    attachable: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.35.0.0/16
 
 volumes:
   app_data:
