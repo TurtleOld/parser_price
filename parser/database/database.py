@@ -22,54 +22,37 @@ async def insert_data(
 ):
     async with AsyncSessionLocal() as session:
         try:
-            # Проверяем наличие продукта по URL
+            # Проверка существования продукта по URL и telegram_user_id
             existing_product = await session.execute(
-                select(Product).where(Product.url == url)
+                select(Message)
+                    .where((Message.url == url) & (Message.telegram_user_id == user_id))
             )
             existing_product = existing_product.scalars().first()
             if existing_product:
                 return 'Этот продукт уже добавлен на отслеживание.'
 
-            existing_message = await session.execute(
-                select(Message).where(Message.telegram_user_id == user_id)
+            # Создаём новое сообщение
+            new_message = Message(
+                telegram_user_id=user_id,
+                url=url,
             )
-            existing_message = existing_message.scalars().first()
-            if existing_message is None:
-                # Если сообщение отсутствует, создаем новое
-                new_message = Message(
-                    telegram_user_id=user_id,
-                    url=url,
-                )
-                session.add(new_message)
-                await session.flush()
+            session.add(new_message)
+            await session.flush()
 
-                # Добавляем новый продукт к сообщению
-                new_product = Product(
-                    available=available,
-                    product_name=product_name,
-                    latest_price=price,
-                    latest_price_ozon=price_ozon,
-                    original_price=original_price,
-                    picture=picture,
-                    message=new_message,
-                )
-                session.add(new_product)
-                await session.commit()
-                return f'Продукт {product_name} успешно добавлен на отслеживание.'
-            else:
-                # Если сообщение существует, добавляем продукт к существующему сообщению
-                new_product = Product(
-                    available=available,
-                    product_name=product_name,
-                    latest_price=price,
-                    latest_price_ozon=price_ozon,
-                    original_price=original_price,
-                    picture=picture,
-                    message=existing_message,
-                )
-                session.add(new_product)
-                await session.commit()
-                return f'Продукт {product_name} успешно добавлен на отслеживание.'
+            # Добавляем новый продукт к сообщению
+            new_product = Product(
+                available=available,
+                url=url,
+                product_name=product_name,
+                latest_price=price,
+                latest_price_ozon=price_ozon,
+                original_price=original_price,
+                picture=picture,
+                message=new_message,
+            )
+            session.add(new_product)
+            await session.commit()
+            return f'<pre>{product_name}</pre> успешно добавлен на отслеживание.'
         except Exception as e:
             await session.rollback()
             return f'Произошла ошибка добавления товара {e}'

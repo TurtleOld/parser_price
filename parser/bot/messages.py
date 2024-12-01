@@ -1,6 +1,5 @@
 import json
 from io import BytesIO
-
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -19,7 +18,8 @@ from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 @bot.message_handler(commands=['start'])
 async def start_command_bot(message):
-    await bot.send_message(message.chat.id, 'Бот запущен!')
+    welcome_message = 'Добро пожаловать!\nПросто отправь ссылку с Ozon\nПосмотреть товары можно командной /my_products'
+    await bot.send_message(message.chat.id, welcome_message)
 
 
 def create_product_keyboard(product_id):
@@ -57,6 +57,7 @@ async def get_price_history(session: AsyncSessionLocal, product):
 
 
 async def send_price_graph(chat_id, product_name, price_history, product_id):
+    price_history = price_history[-20:]
     dates = [d.strftime('%d-%m-%Y %H:%M') for d, _, _ in price_history]
     prices = [p for _, p, _ in price_history]
     prices_ozon = [p for _, _, p in price_history]
@@ -83,7 +84,7 @@ async def send_price_graph(chat_id, product_name, price_history, product_id):
     await bot.send_photo(chat_id, photo=buf, reply_markup=keyboard)
 
 
-@bot.message_handler(commands=['get_prices'])
+@bot.message_handler(commands=['my_products'])
 async def handle_get_prices(message):
     user_id = message.chat.id
     async with AsyncSessionLocal() as session:

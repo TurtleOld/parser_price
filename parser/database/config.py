@@ -1,5 +1,6 @@
 import os
 
+import icecream
 from sqlalchemy import (
     Boolean,
     Column,
@@ -12,7 +13,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, relationship
-
+from dotenv import load_dotenv
+load_dotenv()
 
 class Base(AsyncAttrs, DeclarativeBase):
     pass
@@ -25,7 +27,7 @@ class Message(Base):
     __tablename__ = 'messages'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    telegram_user_id = Column(Integer, unique=True)
+    telegram_user_id = Column(Integer)
     url = Column(String, unique=True)
     products = relationship(
         'Product', back_populates='message', cascade='all, delete-orphan'
