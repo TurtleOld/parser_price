@@ -27,7 +27,7 @@ services:
       - ${LOCATION:-./app_data}/telegram_user.db:/app_data/telegram_user.db:rw
     env_file:
       - .env
-    command: ["sh", "-c", "alembic upgrade head"]
+    command: ["sh", "-c", "alembic upgrade head && poetry run parser"]
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres+asyncpg://postgres:postgres@db:5432/parser}
       TZ: Europe/Moscow
