@@ -6,7 +6,7 @@ from parser.database.database import update_price
 
 
 async def run_every_minute(func):
-    time_update = int(os.environ.get('TIME'))
+    time_update = int(os.environ.get("TIME"))
     while True:
         await func()
         await asyncio.sleep(time_update)

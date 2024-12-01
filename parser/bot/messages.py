@@ -34,7 +34,8 @@ def create_product_keyboard(product_id):
 def create_return_to_card_keyboard(product_id):
     keyboard = InlineKeyboardMarkup()
     button_return_to_card = InlineKeyboardButton(
-        text='Вернуться к карточке товара', callback_data=f'return_to_card_{product_id}'
+        text='Вернуться к карточке товара',
+        callback_data=f'return_to_card_{product_id}',
     )
     keyboard.add(button_return_to_card)
     return keyboard
@@ -55,20 +56,26 @@ async def get_price_history(session: AsyncSessionLocal, product):
 
 
 async def send_price_graph(chat_id, product_name, price_history, product_id):
-    price_history = price_history[-20:]
+    start_date = price_history[0][0].strftime('%d.%m.%Y')
+    end_date = price_history[-1][0].strftime('%d.%m.%Y')
+
+    period_text = f"Период отслеживания с {start_date} по {end_date}"
+
     dates = [d.strftime('%d-%m-%Y %H:%M') for d, _, _ in price_history]
     prices = [p for _, p, _ in price_history]
     prices_ozon = [p for _, _, p in price_history]
+
     plt.figure(figsize=(10, 5))
     plt.plot(dates, prices, marker='o', label='Обычная цена')
     plt.plot(dates, prices_ozon, marker='x', label='Цена по карте Озон')
-    plt.title(f'Изменение цен для {product_name}')
-    plt.xlabel('Дата')
+    plt.title(product_name)
+    plt.xlabel(period_text)
     plt.ylabel('Цена (₽)')
-    plt.xticks(rotation=45)
+    plt.xticks(dates, [''] * len(dates))
     plt.grid()
     plt.legend()
     plt.tight_layout()
+
     buf = BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight')
     buf.seek(0)
@@ -76,7 +83,8 @@ async def send_price_graph(chat_id, product_name, price_history, product_id):
 
     keyboard = InlineKeyboardMarkup()
     back_button = InlineKeyboardButton(
-        text='Вернуться', callback_data=f'return_to_card_{product_id}'
+        text='Вернуться',
+        callback_data=f'return_to_card_{product_id}',
     )
     keyboard.add(back_button)
     await bot.send_photo(chat_id, photo=buf, reply_markup=keyboard)
@@ -89,7 +97,9 @@ async def handle_get_prices(message):
         # Используем SQLAlchemy 2.x API для выполнения асинхронного запроса
         results = await session.execute(
             select(Message)
-            .options(selectinload(Message.products))  # Предзагрузка связанных продуктов
+            .options(
+                selectinload(Message.products)
+            )  # Предзагрузка связанных продуктов
             .filter(Message.telegram_user_id == user_id)
         )
         messages = results.scalars().all()  # Получение всех результатов
@@ -102,7 +112,8 @@ async def handle_get_prices(message):
                 for index, product in enumerate(msg.products):
                     product_name = product.product_name or 'Без названия'
                     button = InlineKeyboardButton(
-                        text=product_name, callback_data=f'product_{msg.id}_{index}'
+                        text=product_name,
+                        callback_data=f'product_{msg.id}_{index}',
                     )
                     keyboard.add(button)
 
@@ -112,7 +123,9 @@ async def handle_get_prices(message):
             )
         else:
             # Если товаров нет, отправляем уведомление
-            await bot.send_message(chat_id=user_id, text='Нет доступных товаров.')
+            await bot.send_message(
+                chat_id=user_id, text='Нет доступных товаров.'
+            )
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('product_'))
@@ -125,7 +138,9 @@ async def callback_product(call):
         result = await session.execute(
             select(Message)
             .options(selectinload(Message.products))
-            .filter(Message.telegram_user_id == user_id, Message.id == message_id)
+            .filter(
+                Message.telegram_user_id == user_id, Message.id == message_id
+            )
         )
         message = result.scalars().first()  # Получение первой записи
 
@@ -149,7 +164,9 @@ async def callback_product(call):
             await bot.send_message(user_id, 'Не удалось найти товар.')
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('view_graph_'))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith('view_graph_')
+)
 async def callback_view_graph(call):
     product_index = int(call.data.split('_')[2])
     user_id = call.message.chat.id
@@ -179,7 +196,9 @@ async def callback_view_graph(call):
             await bot.send_message(user_id, 'Не удалось найти товар.')
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('return_to_card_'))
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith('return_to_card_')
+)
 async def callback_return_to_card(call):
     product_id = int(call.data.split('_')[3])
     user_id = call.message.chat.id

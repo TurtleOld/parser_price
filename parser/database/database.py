@@ -1,8 +1,12 @@
 import json
 from datetime import datetime
 from parser.bot.config import bot
-from parser.database.config import (AsyncSessionLocal, Message, PriceHistory,
-                                    Product)
+from parser.database.config import (
+    AsyncSessionLocal,
+    Message,
+    PriceHistory,
+    Product,
+)
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from parser.services import clean_and_extract_price
@@ -31,7 +35,7 @@ async def insert_data(
             )
             existing_product = existing_product.scalars().first()
             if existing_product:
-                return 'Этот продукт уже добавлен на отслеживание.'
+                return "Этот продукт уже добавлен на отслеживание."
 
             # Создаём новое сообщение
             new_message = Message(
@@ -54,17 +58,21 @@ async def insert_data(
             )
             session.add(new_product)
             await session.commit()
-            return f'<pre>{product_name}</pre> успешно добавлен на отслеживание.'
+            return (
+                f"<pre>{product_name}</pre> успешно добавлен на отслеживание."
+            )
         except Exception as e:
             await session.rollback()
-            return f'Произошла ошибка добавления товара {e}'
+            return f"Произошла ошибка добавления товара {e}"
 
 
 async def update_price():
     async with AsyncSessionLocal() as session:
         results = await session.execute(
             select(Message).options(
-                selectinload(Message.products).selectinload(Product.prices_history)
+                selectinload(Message.products).selectinload(
+                    Product.prices_history
+                )
             )
         )
         messages = results.scalars().all()
@@ -76,18 +84,20 @@ async def update_price():
                 data = await get_product_data(url)
                 parse = DictionaryParser(data)
                 product_name_data = parse.find_key(
-                    'webProductHeading-3385933-default-1'
+                    "webProductHeading-3385933-default-1"
                 )
-                image = parse.find_key('webGallery-3311629-default-1')
+                image = parse.find_key("webGallery-3311629-default-1")
                 picture_dict = json.loads(image[0])
-                picture = picture_dict['images'][0]['src']
+                picture = picture_dict["images"][0]["src"]
                 product_name_dict = json.loads(product_name_data[0])
-                f_key = parse.find_key('webPrice-3121879-default-1')
+                f_key = parse.find_key("webPrice-3121879-default-1")
                 data_dict = json.loads(f_key[0])
-                available = data_dict['isAvailable']
-                price = clean_and_extract_price(data_dict['price'])
-                card_price = clean_and_extract_price(data_dict['cardPrice'])
-                original_price = clean_and_extract_price(data_dict['originalPrice'])
+                available = data_dict["isAvailable"]
+                price = clean_and_extract_price(data_dict["price"])
+                card_price = clean_and_extract_price(data_dict["cardPrice"])
+                original_price = clean_and_extract_price(
+                    data_dict["originalPrice"]
+                )
 
                 product.latest_price = price
                 product.latest_price_ozon = card_price
@@ -118,7 +128,9 @@ async def update_price():
 async def get_data(user_id):
     async with AsyncSessionLocal() as session:
         results = (
-            session.query(Message).filter(Message.telegram_user_id == user_id).all()
+            session.query(Message)
+            .filter(Message.telegram_user_id == user_id)
+            .all()
         )
 
         all_products = []
@@ -133,20 +145,24 @@ async def get_data(user_id):
 
 def format_product_info(product):
     # Проверка наличия необходимых данных о продукте
-    availability = 'Доступен' if product.available else 'Недоступен'
-    product_name = product.product_name if product.product_name else 'Неизвестный товар'
+    availability = "Доступен" if product.available else "Недоступен"
+    product_name = (
+        product.product_name if product.product_name else "Неизвестный товар"
+    )
     price = (
-        product.latest_price if product.latest_price is not None else 'Неизвестная цена'
+        product.latest_price
+        if product.latest_price is not None
+        else "Неизвестная цена"
     )
     ozon_price = (
         product.latest_price_ozon
         if product.latest_price_ozon is not None
-        else 'Неизвестная цена'
+        else "Неизвестная цена"
     )
     original_price = (
         product.original_price
         if product.original_price is not None
-        else 'Неизвестная цена'
+        else "Неизвестная цена"
     )
 
     # Форматируем информацию о продукте
