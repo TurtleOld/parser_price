@@ -22,6 +22,7 @@ async def insert_data(
     price_ozon,
     original_price,
     picture,
+    store,
     user_id=None,
     url=None,
 ):
@@ -55,6 +56,7 @@ async def insert_data(
                 original_price=original_price,
                 picture=picture,
                 message=new_message,
+                store=store,
             )
             session.add(new_product)
             await session.commit()
@@ -87,6 +89,7 @@ async def update_price():
                     "webProductHeading-3385933-default-1"
                 )
                 image = parse.find_key("webGallery-3311629-default-1")
+
                 picture_dict = json.loads(image[0])
                 picture = picture_dict["images"][0]["src"]
                 product_name_dict = json.loads(product_name_data[0])
@@ -99,12 +102,6 @@ async def update_price():
                     data_dict["originalPrice"]
                 )
 
-                product.latest_price = price
-                product.latest_price_ozon = card_price
-                product.original_price = original_price
-                product.available = available
-                product.picture = picture
-
                 if product.latest_price != price:
                     message_text = (
                         f"Цена на товар '{product_name_dict['title']}' изменилась!\n"
@@ -113,6 +110,12 @@ async def update_price():
                         f"Ссылка на товар: https://www.ozon.ru/{url}"
                     )
                     await bot.send_message(user_id, message_text)
+
+                product.latest_price = price
+                product.latest_price_ozon = card_price
+                product.original_price = original_price
+                product.available = available
+                product.picture = picture
 
                 new_price_history_entry = PriceHistory(
                     price=price,
@@ -145,7 +148,6 @@ async def get_data(user_id):
 
 def format_product_info(product):
     # Проверка наличия необходимых данных о продукте
-    availability = "Доступен" if product.available else "Недоступен"
     product_name = (
         product.product_name if product.product_name else "Неизвестный товар"
     )
@@ -167,11 +169,11 @@ def format_product_info(product):
 
     # Форматируем информацию о продукте
     return f"""
-Доступность: {availability}
-Наименование товара: {product_name}
-Цена: {price} ₽
-Цена по карте: {ozon_price} ₽
-Первоначальная цена: {original_price} ₽
+<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name}</a>
+
+<b>Обычная цена:</b> {price} ₽
+<b>Цена по карте Ozon:</b> {ozon_price} ₽
+<b>Первоначальная цена:</b> {original_price} ₽
 """
 
 

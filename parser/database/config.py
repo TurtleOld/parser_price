@@ -47,6 +47,7 @@ class Product(Base):
     available = Column(Boolean)
     url = Column(String)
     product_name = Column(String)
+    store = Column(String, nullable=True)
     picture = Column(String)
     latest_price = Column(Float)
     latest_price_ozon = Column(Float)

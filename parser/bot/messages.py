@@ -137,7 +137,6 @@ async def callback_product(call):
     message_id = int(call.data.split('_')[1])
     user_id = call.message.chat.id
     async with AsyncSessionLocal() as session:
-        # Запрос для получения сообщения и связанных продуктов
         result = await session.execute(
             select(Message)
             .options(selectinload(Message.products))
@@ -157,6 +156,7 @@ async def callback_product(call):
                     photo=product.picture,
                     caption=formatted_info,
                     reply_markup=keyboard,
+                    show_caption_above_media=True,
                 )
         else:
             await bot.send_message(user_id, 'Не удалось найти товар.')
@@ -228,6 +228,7 @@ async def callback_return_to_card(call):
                     photo=product.picture,
                     caption=formatted_info,
                     reply_markup=keyboard,
+                    show_caption_above_media=True,
                 )
         else:
             await bot.send_message(user_id, 'Не удалось найти товар.')
@@ -269,7 +270,9 @@ async def get_url(message):
         await bot.send_message(user_id, 'Не удалось найти информацию о цене.')
         return
     data_dict = json.loads(price_data[0])
-
+    name_store = parse.find_key(
+        "webStickyProducts-726428-default-1")
+    store = json.loads(name_store['name'])
     available = data_dict['isAvailable']
     price = clean_and_extract_price(data_dict['price'])
     card_price = clean_and_extract_price(data_dict['cardPrice'])
@@ -284,6 +287,7 @@ async def get_url(message):
         price_ozon=card_price,
         original_price=original_price,
         picture=picture,
+        store=store,
     )
     await bot.send_message(user_id, result_insert_data)
 
