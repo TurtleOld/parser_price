@@ -166,7 +166,7 @@ def format_product_info(product):
     )
 
     # Форматируем информацию о продукте
-    formatted_string = f"""
+    return f"""
 Доступность: {availability}
 Наименование товара: {product_name}
 Цена: {price} ₽
@@ -174,4 +174,4 @@ def format_product_info(product):
 Первоначальная цена: {original_price} ₽
 """
 
-    return formatted_string
+
