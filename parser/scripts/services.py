@@ -58,7 +58,7 @@ async def add_product_to_monitoring(
                 latest_price_ozon=price_ozon,
                 original_price=original_price,
                 picture=picture,
-                message=new_message,
+                messages=new_message,
                 store=store,
             )
             session.add(new_product)
