@@ -1,4 +1,7 @@
 import json
+
+import icecream
+
 from parser.bot.config import bot
 from parser.bot.keyboards import create_product_keyboard
 from parser.bot.services import get_price_history, send_price_graph
@@ -178,7 +181,10 @@ async def get_url(message):
 
     product_name_data = parse.find_key('webProductHeading-3385933-default-1')
     if not product_name_data:
-        await bot.send_message(user_id, 'Не удалось найти название продукта.')
+        await bot.send_message(
+            user_id,
+            'Товар не был добавлен, так как закончился или отсутствует на маркетплейсе Ozon.',
+        )
         return
     product_name_dict = json.loads(product_name_data[0])
 
