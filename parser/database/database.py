@@ -111,7 +111,7 @@ async def update_price():
                         f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
                         f'Цена по карте Ozon: {card_price} ₽\n'
                         f'Обычная цена: {price} ₽\n\n'
-                        f'Стал дешевле на {abs(decrease_price)} ₽ (&#9660; {percentage_decrease:.2f}%)\n'
+                        f'Стал дешевле на {abs(decrease_price)} ₽ (&#9660; {abs(percentage_decrease):.2f}%)\n'
                     )
                     await bot.send_photo(
                         user_id,
@@ -128,7 +128,7 @@ async def update_price():
                         f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
                         f'Цена по карте Ozon: {card_price} ₽\n'
                         f'Обычная цена: {price} ₽\n\n'
-                        f'Стал дороже на {abs(increase_price)} ₽ (&#9650; {percentage_increase:.2f}%)\n'
+                        f'Стал дороже на {abs(increase_price)} ₽ (&#9650; {abs(percentage_increase):.2f}%)\n'
                     )
                     await bot.send_photo(
                         user_id,
