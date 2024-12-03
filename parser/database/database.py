@@ -102,14 +102,40 @@ async def update_price():
                     data_dict["originalPrice"]
                 )
 
-                if product.latest_price != price:
+                if product.latest_price > price:
+                    decrease_price = product.latest_price - price
+                    percentage_decrease = (
+                        decrease_price / product.latest_price
+                    ) * 100
                     message_text = (
-                        f"Цена на товар '{product_name_dict['title']}' изменилась!\n"
-                        f"Старая цена: {product.latest_price}₽\n"
-                        f"Новая цена: {price}₽\n"
-                        f"Ссылка на товар: https://www.ozon.ru/{url}"
+                        f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
+                        f'Цена по карте Ozon: {card_price} ₽\n'
+                        f'Обычная цена: {price} ₽\n'
+                        f'Стал дешевле на {decrease_price} ₽ (&#9660; {percentage_decrease:.2f}%)\n'
                     )
-                    await bot.send_message(user_id, message_text)
+                    await bot.send_photo(
+                        user_id,
+                        photo=product.picture,
+                        caption=message_text,
+                        show_caption_above_media=True,
+                    )
+                elif product.latest_price < price:
+                    increase_price = product.latest_price - price
+                    percentage_increase = (
+                        increase_price / product.latest_price
+                    ) * 100
+                    message_text = (
+                        f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
+                        f'Цена по карте Ozon: {card_price} ₽\n'
+                        f'Обычная цена: {price} ₽\n'
+                        f'Стал дороже на {increase_price} ₽ (&#9650; {percentage_increase:.2f}%)\n'
+                    )
+                    await bot.send_photo(
+                        user_id,
+                        photo=product.picture,
+                        caption=message_text,
+                        show_caption_above_media=True,
+                    )
 
                 product.latest_price = price
                 product.latest_price_ozon = card_price
@@ -175,5 +201,3 @@ def format_product_info(product):
 <b>Цена по карте Ozon:</b> {ozon_price} ₽
 <b>Первоначальная цена:</b> {original_price} ₽
 """
-
-
