@@ -3,11 +3,12 @@ import json
 from datetime import datetime
 from parser.bot.config import bot
 from parser.database.config import AsyncSessionLocal
-from parser.database.tables import Message, PriceHistory, Product
+from parser.database.config import Message, PriceHistory, Product
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+
 
 def clean_and_extract_price(price_string):
     # Удаляем тонкие пробелы (\u2009)
@@ -18,6 +19,7 @@ def clean_and_extract_price(price_string):
 
     # Преобразуем в число
     return int(number_part)
+
 
 async def add_product_to_monitoring(
     available,
