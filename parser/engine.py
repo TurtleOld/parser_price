@@ -1,8 +1,7 @@
 import asyncio
 import os
 from parser.bot.messages import start_bot
-from parser.database.config import init_db
-from parser.database.database import update_price
+from parser.scripts.services import update_product_to_monitoring
 
 
 async def run_every_minute(func):
@@ -13,8 +12,9 @@ async def run_every_minute(func):
 
 
 async def main():
-    await init_db()
-    await asyncio.gather(run_every_minute(update_price), start_bot())
+    await asyncio.gather(
+        run_every_minute(update_product_to_monitoring), start_bot()
+    )
 
 
 asyncio.run(main())

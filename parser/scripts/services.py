@@ -1,21 +1,25 @@
+import re
 import json
 from datetime import datetime
 from parser.bot.config import bot
-from parser.database.config import (
-    AsyncSessionLocal,
-    Message,
-    PriceHistory,
-    Product,
-)
+from parser.database.config import AsyncSessionLocal
+from parser.database.tables import Message, PriceHistory, Product
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
-from parser.services import clean_and_extract_price
-
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+def clean_and_extract_price(price_string):
+    # Удаляем тонкие пробелы (\u2009)
+    cleaned_string = price_string.replace("\u2009", "")
 
-async def insert_data(
+    # Извлекаем числовую часть
+    number_part = "".join(re.findall(r"\d+", cleaned_string))
+
+    # Преобразуем в число
+    return int(number_part)
+
+async def add_product_to_monitoring(
     available,
     product_name,
     price,
@@ -28,7 +32,6 @@ async def insert_data(
 ):
     async with AsyncSessionLocal() as session:
         try:
-            # Проверка существования продукта по URL и telegram_user_id
             existing_product = await session.execute(
                 select(Message).where(
                     (Message.url == url) & (Message.telegram_user_id == user_id)
@@ -38,7 +41,6 @@ async def insert_data(
             if existing_product:
                 return "Этот продукт уже добавлен на отслеживание."
 
-            # Создаём новое сообщение
             new_message = Message(
                 telegram_user_id=user_id,
                 url=url,
@@ -46,7 +48,6 @@ async def insert_data(
             session.add(new_message)
             await session.flush()
 
-            # Добавляем новый продукт к сообщению
             new_product = Product(
                 available=available,
                 url=url,
@@ -68,7 +69,7 @@ async def insert_data(
             return f"Произошла ошибка добавления товара {e}"
 
 
-async def update_price():
+async def update_product_to_monitoring():
     async with AsyncSessionLocal() as session:
         results = await session.execute(
             select(Message).options(
@@ -152,24 +153,6 @@ async def update_price():
                 product.prices_history.append(new_price_history_entry)
 
         await session.commit()
-
-
-async def get_data(user_id):
-    async with AsyncSessionLocal() as session:
-        results = (
-            session.query(Message)
-            .filter(Message.telegram_user_id == user_id)
-            .all()
-        )
-
-        all_products = []
-
-        for result in results:
-            for product in result.products:
-                formatted_info = format_product_info(product)
-                all_products.append(formatted_info)
-
-        return all_products
 
 
 def format_product_info(product):

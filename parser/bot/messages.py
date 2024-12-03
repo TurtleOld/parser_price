@@ -1,16 +1,18 @@
-import datetime
 import json
-from io import BytesIO
 from parser.bot.config import bot
-from parser.database.config import AsyncSessionLocal, Message, PriceHistory
-from parser.database.database import format_product_info, insert_data
-from parser.parse_url import parse_url
+from parser.bot.keyboards import create_product_keyboard
+from parser.bot.services import get_price_history, send_price_graph
+from parser.database.config import AsyncSessionLocal
+from parser.scripts.services import (
+    format_product_info,
+    add_product_to_monitoring,
+)
+from parser.database.tables import Message
+from parser.scripts.parse_url import parse_url
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
-from parser.services import clean_and_extract_price
+from parser.scripts.services import clean_and_extract_price
 from typing import Any
-
-from matplotlib import pyplot as plt
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -22,92 +24,16 @@ async def start_command_bot(message):
     await bot.send_message(message.chat.id, welcome_message)
 
 
-def create_product_keyboard(product_id):
-    keyboard = InlineKeyboardMarkup()
-    button_view_graph = InlineKeyboardButton(
-        text='Посмотреть график изменения цены',
-        callback_data=f'view_graph_{product_id}',
-    )
-    keyboard.add(button_view_graph)
-    return keyboard
-
-
-def create_return_to_card_keyboard(product_id):
-    keyboard = InlineKeyboardMarkup()
-    button_return_to_card = InlineKeyboardButton(
-        text='Вернуться к карточке товара',
-        callback_data=f'return_to_card_{product_id}',
-    )
-    keyboard.add(button_return_to_card)
-    return keyboard
-
-
-async def get_price_history(session: AsyncSessionLocal, product):
-    # Получаем историю цен из БД асинхронно
-    result = await session.execute(
-        select(PriceHistory).filter(PriceHistory.product_id == product.id)
-    )
-    price_history_entries = result.scalars().all()
-
-    # Возвращаем историю цен
-    return [
-        (entry.updated_at, entry.price, entry.price_ozon)
-        for entry in price_history_entries
-    ]
-
-
-async def send_price_graph(chat_id, product_name, price_history, product_id):
-    if price_history:
-        start_date = price_history[0][0].strftime('%d.%m.%Y')
-        end_date = price_history[-1][0].strftime('%d.%m.%Y')
-    else:
-        start_date = datetime.datetime.now().strftime('%d.%m.%Y')
-        end_date = datetime.datetime.now().strftime('%d.%m.%Y')
-
-    period_text = f"Период отслеживания с {start_date} по {end_date}"
-
-    dates = [d.strftime('%d-%m-%Y %H:%M') for d, _, _ in price_history]
-    prices = [p for _, p, _ in price_history]
-    prices_ozon = [p for _, _, p in price_history]
-
-    plt.figure(figsize=(10, 5))
-    plt.plot(dates, prices, marker='o', label='Обычная цена')
-    plt.plot(dates, prices_ozon, marker='x', label='Цена по карте Озон')
-    plt.title(product_name)
-    plt.xlabel(period_text)
-    plt.ylabel('Цена (₽)')
-    plt.xticks(dates, [''] * len(dates))
-    plt.grid()
-    plt.legend()
-    plt.tight_layout()
-
-    buf = BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight')
-    buf.seek(0)
-    plt.close()
-
-    keyboard = InlineKeyboardMarkup()
-    back_button = InlineKeyboardButton(
-        text='Вернуться',
-        callback_data=f'return_to_card_{product_id}',
-    )
-    keyboard.add(back_button)
-    await bot.send_photo(chat_id, photo=buf, reply_markup=keyboard)
-
-
 @bot.message_handler(commands=['my_products'])
 async def handle_get_prices(message):
     user_id = message.chat.id
     async with AsyncSessionLocal() as session:
-        # Используем SQLAlchemy 2.x API для выполнения асинхронного запроса
         results = await session.execute(
             select(Message)
-            .options(
-                selectinload(Message.products)
-            )  # Предзагрузка связанных продуктов
+            .options(selectinload(Message.products))
             .filter(Message.telegram_user_id == user_id)
         )
-        messages = results.scalars().all()  # Получение всех результатов
+        messages = results.scalars().all()
 
         keyboard = InlineKeyboardMarkup()
 
@@ -121,14 +47,15 @@ async def handle_get_prices(message):
                     )
                     keyboard.add(button)
 
-            # Отправляем сообщение с клавиатурой
             await bot.send_message(
-                chat_id=user_id, text='Выберите товар:', reply_markup=keyboard
+                chat_id=user_id,
+                text='Выберите товар:',
+                reply_markup=keyboard,
             )
         else:
-            # Если товаров нет, отправляем уведомление
             await bot.send_message(
-                chat_id=user_id, text='Нет доступных товаров.'
+                chat_id=user_id,
+                text='Нет доступных товаров.',
             )
 
 
@@ -270,15 +197,14 @@ async def get_url(message):
         await bot.send_message(user_id, 'Не удалось найти информацию о цене.')
         return
     data_dict = json.loads(price_data[0])
-    name_store = parse.find_key(
-        "webStickyProducts-726428-default-1")
+    name_store = parse.find_key("webStickyProducts-726428-default-1")
     store = json.loads(name_store[0])['seller']['name']
     available = data_dict['isAvailable']
     price = clean_and_extract_price(data_dict['price'])
     card_price = clean_and_extract_price(data_dict['cardPrice'])
     original_price = clean_and_extract_price(data_dict['originalPrice'])
 
-    result_insert_data = await insert_data(
+    result_insert_data = await add_product_to_monitoring(
         available=available,
         user_id=user_id,
         url=result_parse_url,

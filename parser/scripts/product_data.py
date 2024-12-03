@@ -9,9 +9,6 @@ async def get_product_data(url):
             async with session.get(base_url, params=params) as response:
                 if response.status == 200:
                     return await response.json()
-                else:
-                    print(f"Ошибка: {response.status}")
-                    return None
-    except Exception as e:
-        print(f"Ошибка при выполнении запроса: {e}")
+                return None
+    except Exception:
         return None
