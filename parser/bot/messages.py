@@ -1,6 +1,9 @@
 import datetime
 import json
 from io import BytesIO
+
+import icecream
+
 from parser.bot.config import bot
 from parser.database.config import AsyncSessionLocal, Message, PriceHistory
 from parser.database.database import format_product_info, insert_data
@@ -272,7 +275,7 @@ async def get_url(message):
     data_dict = json.loads(price_data[0])
     name_store = parse.find_key(
         "webStickyProducts-726428-default-1")
-    store = json.loads(name_store['name'])
+    store = json.loads(name_store[0])['seller']['name']
     available = data_dict['isAvailable']
     price = clean_and_extract_price(data_dict['price'])
     card_price = clean_and_extract_price(data_dict['cardPrice'])
