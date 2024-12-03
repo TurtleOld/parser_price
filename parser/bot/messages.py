@@ -7,7 +7,7 @@ from parser.scripts.services import (
     format_product_info,
     add_product_to_monitoring,
 )
-from parser.database.tables import Message
+from parser.database.config import Message
 from parser.scripts.parse_url import parse_url
 from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data

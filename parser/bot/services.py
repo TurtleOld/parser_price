@@ -3,7 +3,7 @@ from io import BytesIO
 from parser.bot.config import bot
 from parser.bot.keyboards import create_return_to_card_keyboard
 from parser.database.config import AsyncSessionLocal
-from parser.database.tables import PriceHistory
+from parser.database.config import PriceHistory
 from typing import List
 
 from matplotlib import pyplot as plt

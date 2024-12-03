@@ -44,7 +44,7 @@ class Message(Base):
     telegram_user_id: Mapped[int] = mapped_column(Integer())
     url: Mapped[str] = mapped_column(String(), unique=True)
     products: Mapped[List['Product']] = relationship(
-        back_populates="message",
+        back_populates="messages",
         cascade="all, delete-orphan",
     )
 
@@ -62,13 +62,9 @@ class Product(Base):
     latest_price: Mapped[float] = mapped_column(Float)
     latest_price_ozon: Mapped[float] = mapped_column(Float)
     original_price: Mapped[float] = mapped_column(Float)
-    messages: Mapped[List['Message']] = relationship(
-        back_populates="products",
-        cascade="all, delete-orphan",
-    )
+    messages: Mapped[List['Message']] = relationship(back_populates="products")
     prices_history: Mapped[List['PriceHistory']] = relationship(
-        back_populates="product",
-        cascade="all, delete-orphan",
+        back_populates="products",
     )
 
 
@@ -83,5 +79,4 @@ class PriceHistory(Base):
     original_price: Mapped[float] = mapped_column(Float)
     products: Mapped[List['Product']] = relationship(
         back_populates="prices_history",
-        cascade="all, delete-orphan",
     )
