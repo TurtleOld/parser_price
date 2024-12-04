@@ -229,5 +229,4 @@ async def start_bot() -> Any:
     return await bot.infinity_polling(
         timeout=90,
         request_timeout=90,
-        restart_on_change=True,
     )
