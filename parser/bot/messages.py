@@ -227,11 +227,3 @@ async def get_url(message):
         store=store,
     )
     await bot.send_message(user_id, result_insert_data)
-
-
-async def start_bot() -> Any:
-    """Function for start telegram bot"""
-    return await bot.infinity_polling(
-        timeout=300,
-        request_timeout=300,
-    )
