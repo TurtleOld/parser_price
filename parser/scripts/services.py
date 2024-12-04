@@ -157,7 +157,7 @@ async def update_product_to_monitoring():
 
             await session.commit()
     except Exception as err:
-        print(f'Error update product{err}')
+        print(f'Error update product: {err}')
 
 
 def format_product_info(product):
