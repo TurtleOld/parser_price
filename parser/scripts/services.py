@@ -99,11 +99,24 @@ async def update_product_to_monitoring():
                     product_name_dict = json.loads(product_name_data[0])
                     f_key = parse.find_key("webPrice-3121879-default-1")
                     data_dict = json.loads(f_key[0])
-                    available = data_dict["isAvailable"]
-                    price = clean_and_extract_price(data_dict["price"])
-                    card_price = clean_and_extract_price(data_dict["cardPrice"])
+                    available = data_dict.get('isAvailable', None)
+                    price = clean_and_extract_price(
+                        data_dict.get(
+                            'price',
+                            None,
+                        )
+                    )
+                    card_price = clean_and_extract_price(
+                        data_dict.get(
+                            'cardPrice',
+                            None,
+                        )
+                    )
                     original_price = clean_and_extract_price(
-                        data_dict["originalPrice"]
+                        data_dict.get(
+                            'originalPrice',
+                            None,
+                        )
                     )
 
                     if product.latest_price > price:

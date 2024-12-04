@@ -204,17 +204,22 @@ async def get_url(message):
         return
     data_dict = json.loads(price_data[0])
     name_store = parse.find_key("webStickyProducts-726428-default-1")
-    store = json.loads(name_store[0])['seller']['name']
-    available = data_dict['isAvailable']
-    price = clean_and_extract_price(data_dict['price'])
-    card_price = clean_and_extract_price(data_dict['cardPrice'])
-    original_price = clean_and_extract_price(data_dict['originalPrice'])
+    store = json.loads(name_store[0]).get('seller', None).get('name', None)
+    available = data_dict.get('isAvailable', None)
+    price = clean_and_extract_price(data_dict.get('price', None))
+    card_price = clean_and_extract_price(data_dict.get('cardPrice', None))
+    original_price = clean_and_extract_price(
+        data_dict.get(
+            'originalPrice',
+            None,
+        )
+    )
 
     result_insert_data = await add_product_to_monitoring(
         available=available,
         user_id=user_id,
         url=result_parse_url,
-        product_name=product_name_dict['title'],
+        product_name=product_name_dict.get('title', None),
         price=price,
         price_ozon=card_price,
         original_price=original_price,
@@ -227,6 +232,6 @@ async def get_url(message):
 async def start_bot() -> Any:
     """Function for start telegram bot"""
     return await bot.infinity_polling(
-        timeout=90,
-        request_timeout=90,
+        timeout=180,
+        request_timeout=180,
     )
