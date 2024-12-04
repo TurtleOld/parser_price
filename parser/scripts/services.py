@@ -11,14 +11,18 @@ from sqlalchemy.orm import selectinload
 
 
 def clean_and_extract_price(price_string):
-    # Удаляем тонкие пробелы (\u2009)
-    cleaned_string = price_string.replace("\u2009", "")
+    try:
+        if price_string:
+            # Удаляем тонкие пробелы (\u2009)
+            cleaned_string = price_string.replace("\u2009", "")
 
-    # Извлекаем числовую часть
-    number_part = "".join(re.findall(r"\d+", cleaned_string))
+            # Извлекаем числовую часть
+            number_part = "".join(re.findall(r"\d+", cleaned_string))
 
-    # Преобразуем в число
-    return int(number_part)
+            # Преобразуем в число
+            return int(number_part)
+    except Exception as err:
+        print(f'clean_and_extract_price {err}')
 
 
 async def add_product_to_monitoring(
