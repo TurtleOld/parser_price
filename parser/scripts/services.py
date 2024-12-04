@@ -72,89 +72,92 @@ async def add_product_to_monitoring(
 
 
 async def update_product_to_monitoring():
-    async with AsyncSessionLocal() as session:
-        results = await session.execute(
-            select(Message).options(
-                selectinload(Message.products).selectinload(
-                    Product.prices_history
+    try:
+        async with AsyncSessionLocal() as session:
+            results = await session.execute(
+                select(Message).options(
+                    selectinload(Message.products).selectinload(
+                        Product.prices_history
+                    )
                 )
             )
-        )
-        messages = results.scalars().all()
+            messages = results.scalars().all()
 
-        for message in messages:
-            user_id = message.telegram_user_id
-            for product in message.products:
-                url = message.url
-                data = await get_product_data(url)
-                parse = DictionaryParser(data)
-                product_name_data = parse.find_key(
-                    "webProductHeading-3385933-default-1"
-                )
-                image = parse.find_key("webGallery-3311629-default-1")
+            for message in messages:
+                user_id = message.telegram_user_id
+                for product in message.products:
+                    url = message.url
+                    data = await get_product_data(url)
+                    parse = DictionaryParser(data)
+                    product_name_data = parse.find_key(
+                        "webProductHeading-3385933-default-1"
+                    )
+                    image = parse.find_key("webGallery-3311629-default-1")
 
-                picture_dict = json.loads(image[0])
-                picture = picture_dict["images"][0]["src"]
-                product_name_dict = json.loads(product_name_data[0])
-                f_key = parse.find_key("webPrice-3121879-default-1")
-                data_dict = json.loads(f_key[0])
-                available = data_dict["isAvailable"]
-                price = clean_and_extract_price(data_dict["price"])
-                card_price = clean_and_extract_price(data_dict["cardPrice"])
-                original_price = clean_and_extract_price(
-                    data_dict["originalPrice"]
-                )
-
-                if product.latest_price > price:
-                    decrease_price = product.latest_price - price
-                    percentage_decrease = (
-                        decrease_price / product.latest_price
-                    ) * 100
-                    message_text = (
-                        f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
-                        f'Цена по карте Ozon: {card_price} ₽\n'
-                        f'Обычная цена: {price} ₽\n\n'
-                        f'Стал дешевле на {abs(decrease_price)} ₽ (&#9660; {abs(percentage_decrease):.2f}%)\n'
-                    )
-                    await bot.send_photo(
-                        user_id,
-                        photo=product.picture,
-                        caption=message_text,
-                        show_caption_above_media=True,
-                    )
-                elif product.latest_price < price:
-                    increase_price = product.latest_price - price
-                    percentage_increase = (
-                        increase_price / product.latest_price
-                    ) * 100
-                    message_text = (
-                        f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
-                        f'Цена по карте Ozon: {card_price} ₽\n'
-                        f'Обычная цена: {price} ₽\n\n'
-                        f'Стал дороже на {abs(increase_price)} ₽ (&#9650; {abs(percentage_increase):.2f}%)\n'
-                    )
-                    await bot.send_photo(
-                        user_id,
-                        photo=product.picture,
-                        caption=message_text,
-                        show_caption_above_media=True,
+                    picture_dict = json.loads(image[0])
+                    picture = picture_dict["images"][0]["src"]
+                    product_name_dict = json.loads(product_name_data[0])
+                    f_key = parse.find_key("webPrice-3121879-default-1")
+                    data_dict = json.loads(f_key[0])
+                    available = data_dict["isAvailable"]
+                    price = clean_and_extract_price(data_dict["price"])
+                    card_price = clean_and_extract_price(data_dict["cardPrice"])
+                    original_price = clean_and_extract_price(
+                        data_dict["originalPrice"]
                     )
 
-                product.latest_price = price
-                product.latest_price_ozon = card_price
-                product.original_price = original_price
-                product.available = available
-                product.picture = picture
+                    if product.latest_price > price:
+                        decrease_price = product.latest_price - price
+                        percentage_decrease = (
+                            decrease_price / product.latest_price
+                        ) * 100
+                        message_text = (
+                            f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
+                            f'Цена по карте Ozon: {card_price} ₽\n'
+                            f'Обычная цена: {price} ₽\n\n'
+                            f'Стал дешевле на {abs(decrease_price)} ₽ (&#9660; {abs(percentage_decrease):.2f}%)\n'
+                        )
+                        await bot.send_photo(
+                            user_id,
+                            photo=product.picture,
+                            caption=message_text,
+                            show_caption_above_media=True,
+                        )
+                    elif product.latest_price < price:
+                        increase_price = product.latest_price - price
+                        percentage_increase = (
+                            increase_price / product.latest_price
+                        ) * 100
+                        message_text = (
+                            f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
+                            f'Цена по карте Ozon: {card_price} ₽\n'
+                            f'Обычная цена: {price} ₽\n\n'
+                            f'Стал дороже на {abs(increase_price)} ₽ (&#9650; {abs(percentage_increase):.2f}%)\n'
+                        )
+                        await bot.send_photo(
+                            user_id,
+                            photo=product.picture,
+                            caption=message_text,
+                            show_caption_above_media=True,
+                        )
 
-                new_price_history_entry = PriceHistory(
-                    price=price,
-                    price_ozon=card_price,
-                    original_price=original_price,
-                    updated_at=datetime.now(),
-                )
-                product.prices_history.append(new_price_history_entry)
+                    product.latest_price = price
+                    product.latest_price_ozon = card_price
+                    product.original_price = original_price
+                    product.available = available
+                    product.picture = picture
 
-        await session.commit()
+                    new_price_history_entry = PriceHistory(
+                        price=price,
+                        price_ozon=card_price,
+                        original_price=original_price,
+                        updated_at=datetime.now(),
+                    )
+                    product.prices_history.append(new_price_history_entry)
+
+            await session.commit()
+    except Exception as err:
+        print(f'Error update product{err}')
 
 
 def format_product_info(product):
