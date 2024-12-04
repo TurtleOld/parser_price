@@ -62,7 +62,7 @@ class Product(Base):
     picture: Mapped[str] = mapped_column(String)
     latest_price: Mapped[float] = mapped_column(Float)
     latest_price_ozon: Mapped[float] = mapped_column(Float)
-    original_price: Mapped[float] = mapped_column(Float)
+    original_price: Mapped[float] = mapped_column(Float, nullable=True)
     messages: Mapped['Message'] = relationship(back_populates="products")
     prices_history: Mapped[List['PriceHistory']] = relationship(
         back_populates="products",
@@ -77,7 +77,7 @@ class PriceHistory(Base):
     updated_at = mapped_column(DateTime)
     price: Mapped[float] = mapped_column(Float)
     price_ozon: Mapped[float] = mapped_column(Float)
-    original_price: Mapped[float] = mapped_column(Float)
+    original_price: Mapped[float] = mapped_column(Float, nullable=True)
     products: Mapped['Product'] = relationship(
         back_populates="prices_history",
     )
