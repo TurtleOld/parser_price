@@ -2,12 +2,19 @@ from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 def create_product_keyboard(product_id):
-    keyboard = InlineKeyboardMarkup()
     button_view_graph = InlineKeyboardButton(
         text='Посмотреть график изменения цены',
         callback_data=f'view_graph_{product_id}',
     )
-    keyboard.add(button_view_graph)
+    remove_product_button = InlineKeyboardButton(
+        text='Удалить товар',
+        callback_data=f'remove_product_{product_id}'
+    )
+    keyboard = InlineKeyboardMarkup(
+        [
+            [button_view_graph, remove_product_button]
+        ]
+    )
     return keyboard
 
 

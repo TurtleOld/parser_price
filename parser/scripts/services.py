@@ -1,6 +1,9 @@
 import re
 import json
 from datetime import datetime
+
+from telebot.formatting import escape_markdown
+
 from parser.bot.config import bot
 from parser.database.config import AsyncSessionLocal
 from parser.database.config import Message, PriceHistory, Product
@@ -178,7 +181,6 @@ async def update_product_to_monitoring():
 
 
 def format_product_info(product):
-    # Проверка наличия необходимых данных о продукте
     product_name = (
         product.product_name if product.product_name else "Неизвестный товар"
     )
@@ -198,11 +200,9 @@ def format_product_info(product):
         else "Неизвестная цена"
     )
 
-    # Форматируем информацию о продукте
     return f"""
-<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name}</a>
-
-<b>Обычная цена:</b> {price} ₽
-<b>Цена по карте Ozon:</b> {ozon_price} ₽
-<b>Первоначальная цена:</b> {original_price} ₽
+*Товар:* [{escape_markdown(product_name)}](https://www.ozon.ru{escape_markdown(product.url)})\n
+*Обычная цена:* {escape_markdown(str(price))} ₽
+*Цена по карте Ozon:* {escape_markdown(str(ozon_price))} ₽
+*Первоначальная цена:* {escape_markdown(str(original_price))} ₽\n
 """

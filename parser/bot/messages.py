@@ -1,11 +1,8 @@
 import json
-
-import icecream
-
 from parser.bot.config import bot
 from parser.bot.keyboards import create_product_keyboard
 from parser.bot.services import get_price_history, send_price_graph
-from parser.database.config import AsyncSessionLocal
+from parser.database.config import AsyncSessionLocal, PriceHistory, Product
 from parser.scripts.services import (
     format_product_info,
     add_product_to_monitoring,
@@ -16,9 +13,9 @@ from parser.scripts.parser_dictionary import DictionaryParser
 from parser.scripts.product_data import get_product_data
 from parser.scripts.services import clean_and_extract_price
 from typing import Any
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
-from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 
 
 @bot.message_handler(commands=['start'])
@@ -142,18 +139,10 @@ async def callback_return_to_card(call):
         message = result.scalars().first()
         if message:
             for product in message.products:
-
-                # Форматирование информации о продукте
                 formatted_info = format_product_info(product)
-
-                # Удаление предыдущего сообщения
                 await bot.delete_message(user_id, call.message.id)
-
-                # Создание клавиатуры для продукта
                 keyboard = create_product_keyboard(product_id)
-
-                # Отправка карточки с продуктом
-                await bot.send_photo(
+                await bot.send_message(
                     chat_id=user_id,
                     photo=product.picture,
                     caption=formatted_info,
@@ -162,6 +151,39 @@ async def callback_return_to_card(call):
                 )
         else:
             await bot.send_message(user_id, 'Не удалось найти товар.')
+
+
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith('remove_product_')
+)
+async def callback_remove_product(call: CallbackQuery):
+    product_id = int(call.data.split('_')[2])
+    user_id = call.message.chat.id
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(Product)
+            .join(Message)
+            .filter(
+                Message.telegram_user_id == user_id,
+                Product.id == product_id,
+            )
+        )
+
+        product = result.scalars().first()
+
+        if product is not None:
+            await session.execute(delete(PriceHistory).where(
+                PriceHistory.product_id == product_id))
+
+            await session.delete(product)
+            await bot.delete_message(user_id, call.message.id)
+            await session.commit()
+            await bot.answer_callback_query(callback_query_id=call.id,
+                                            text="Товар удален.")
+        else:
+            await bot.answer_callback_query(callback_query_id=call.id,
+                                            text="Не удалось найти товар.")
 
 
 @bot.message_handler(content_types=['text'])
