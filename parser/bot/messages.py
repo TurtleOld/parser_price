@@ -142,7 +142,7 @@ async def callback_return_to_card(call):
                 formatted_info = format_product_info(product)
                 await bot.delete_message(user_id, call.message.id)
                 keyboard = create_product_keyboard(product_id)
-                await bot.send_message(
+                await bot.send_photo(
                     chat_id=user_id,
                     photo=product.picture,
                     caption=formatted_info,
@@ -180,10 +180,10 @@ async def callback_remove_product(call: CallbackQuery):
             await bot.delete_message(user_id, call.message.id)
             await session.commit()
             await bot.answer_callback_query(callback_query_id=call.id,
-                                            text="Товар удален.")
+                                            text="Товар удален.",)
         else:
             await bot.answer_callback_query(callback_query_id=call.id,
-                                            text="Не удалось найти товар.")
+                                            text="Не удалось найти товар.",)
 
 
 @bot.message_handler(content_types=['text'])

@@ -12,4 +12,4 @@ if os.getenv("DEBUG"):
 else:
     telebot.logger.setLevel(logging.INFO)
 token = os.getenv("TOKEN_TELEGRAM_BOT")
-bot = AsyncTeleBot(token, parse_mode="MarkdownV2")
+bot = AsyncTeleBot(token, parse_mode="HTML")

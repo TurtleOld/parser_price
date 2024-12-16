@@ -127,15 +127,15 @@ async def update_product_to_monitoring():
                     )
 
                     if product.latest_price > price:
-                        decrease_price = product.latest_price - price
+                        decrease_price = float(product.latest_price) - float(price)
                         percentage_decrease = (
-                            decrease_price / product.latest_price
+                            decrease_price / float(product.latest_price)
                         ) * 100
                         message_text = (
                             f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
                             f'Цена по карте Ozon: {card_price} ₽\n'
                             f'Обычная цена: {price} ₽\n\n'
-                            f'Стал дешевле на {abs(decrease_price)} ₽ (&#9660; {abs(percentage_decrease):.2f}%)\n'
+                            f'Цена снизилась на {abs(decrease_price)} ₽ (&#9660; {abs(percentage_decrease):.2f}%)\n'
                         )
                         await bot.send_photo(
                             user_id,
@@ -144,15 +144,15 @@ async def update_product_to_monitoring():
                             show_caption_above_media=True,
                         )
                     elif product.latest_price < price:
-                        increase_price = product.latest_price - price
-                        percentage_increase = (
-                            increase_price / product.latest_price
-                        ) * 100
+                        increase_price = float(product.latest_price) - float(
+                            price)
+                        percentage_increase = (increase_price / float(
+                            product.latest_price)) * 100
                         message_text = (
-                            f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
-                            f'Цена по карте Ozon: {card_price} ₽\n'
-                            f'Обычная цена: {price} ₽\n\n'
-                            f'Стал дороже на {abs(increase_price)} ₽ (&#9650; {abs(percentage_increase):.2f}%)\n'
+                            f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n'
+                            f'<b>Цена по карте Ozon:</b> {card_price} ₽\n'
+                            f'<b>Обычная цена:</b> {price} ₽\n\n'
+                            f'Цена повысилась на {escape_markdown(str(abs(increase_price)))} ₽ <span>&#9650; {abs(percentage_increase):.2f}%</span>\n'
                         )
                         await bot.send_photo(
                             user_id,
@@ -201,8 +201,8 @@ def format_product_info(product):
     )
 
     return f"""
-*Товар:* [{escape_markdown(product_name)}](https://www.ozon.ru{escape_markdown(product.url)})\n
-*Обычная цена:* {escape_markdown(str(price))} ₽
-*Цена по карте Ozon:* {escape_markdown(str(ozon_price))} ₽
-*Первоначальная цена:* {escape_markdown(str(original_price))} ₽\n
-"""
+<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name}</a>\n
+<b>Обычная цена:</b> {price} ₽
+<b>Цена по карте Ozon:</b> {ozon_price} ₽
+<b>Первоначальная цена:</b> {original_price} ₽\n
+    """
