@@ -97,7 +97,6 @@ async def update_product_to_monitoring():
                 for product in message.products:
                     url = message.url
                     data = await get_product_data(url)
-                    icecream.ic(data)
                     if data:
                         parse = DictionaryParser(data)
                         product_name_data = parse.find_key(
