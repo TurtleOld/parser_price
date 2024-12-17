@@ -92,6 +92,8 @@ async def update_product_to_monitoring():
                 for product in message.products:
                     url = message.url
                     data = await get_product_data(url)
+                    if not data:
+                        return
                     parse = DictionaryParser(data)
                     product_name_data = parse.find_key(
                         "webProductHeading-3385933-default-1"
