@@ -79,7 +79,9 @@ async def add_product_to_monitoring(
 
 
 async def update_product_to_monitoring():
+    sent = False
     try:
+        
         async with AsyncSessionLocal() as session:
             results = await session.execute(
                 select(Message).options(
@@ -178,8 +180,17 @@ async def update_product_to_monitoring():
                         product.prices_history.append(new_price_history_entry)
 
             await session.commit()
+    except IndexError:
+        if not sent:
+            await bot.send_message(
+                user_id,
+                'Товар закончился. Отслеживается прекратилось, пока товар не появится вновь.',
+            )
+            sent = True
+            
     except Exception as err:
         print(f'Error update product {product.product_name}: {err}')
+    
 
 
 def format_product_info(product):
