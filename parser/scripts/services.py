@@ -1,9 +1,6 @@
 import re
 import json
 from datetime import datetime
-
-from telebot.formatting import escape_markdown
-
 from parser.bot.config import bot
 from parser.database.config import AsyncSessionLocal
 from parser.database.config import Message, PriceHistory, Product
@@ -152,7 +149,7 @@ async def update_product_to_monitoring():
                             f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n'
                             f'<b>Цена по карте Ozon:</b> {card_price} ₽\n'
                             f'<b>Обычная цена:</b> {price} ₽\n\n'
-                            f'Цена повысилась на {escape_markdown(str(abs(increase_price)))} ₽ <span>&#9650; {abs(percentage_increase):.2f}%</span>\n'
+                            f'Цена повысилась на {abs(increase_price)} ₽ <span>&#9650; {abs(percentage_increase):.2f}%</span>\n'
                         )
                         await bot.send_photo(
                             user_id,
