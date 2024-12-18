@@ -103,7 +103,7 @@ async def update_product_to_monitoring():
 
                     if data:
                         parse = DictionaryParser(data)
-                        product_name_dict = {}
+                        product_name = {}
 
                         try:
                             product_name_data = parse.find_key("webProductHeading-3385933-default-1")
@@ -114,7 +114,8 @@ async def update_product_to_monitoring():
 
                             picture_dict = json.loads(image[0])
                             picture = picture_dict["images"][0]["src"]
-                            product_name_dict = json.loads(product_name_data[0])  # Инициализация для текущего продукта
+                            product_name_dict = json.loads(product_name_data[0])
+                            product_name['title'] = product_name_dict['title']
                             f_key = parse.find_key("webPrice-3121879-default-1")
                             data_dict = json.loads(f_key[0])
 
@@ -169,12 +170,11 @@ async def update_product_to_monitoring():
                             product.prices_history.append(new_price_history_entry)
 
                         except (IndexError, ValueError):
-                            product_title = product_name_dict["title"]
-                            icecream.ic(product_title)
+                            icecream.ic(product.product_name)
                             if not sent_messages[user_id]:
                                 await bot.send_message(
                                     user_id,
-                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_title}</a>\n закончился. Отслеживание прекратилось, пока товар не появится вновь.',
+                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product.product_name}</a>\n закончился. Отслеживание прекратилось, пока товар не появится вновь.',
                                 )
                                 sent_messages[user_id] = True
                             continue
