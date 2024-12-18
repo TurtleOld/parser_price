@@ -165,13 +165,18 @@ async def update_product_to_monitoring():
                                 updated_at=datetime.now(),
                             )
                             product.prices_history.append(new_price_history_entry)
-
+                        
                         except (IndexError, ValueError):
-                            icecream.ic(product_name_dict["title"])
+                            # Обработка ошибки
+                            if 'product_name_dict' in locals() and "title" in product_name_dict:
+                                icecream.ic(product_name_dict["title"])
+                            else:
+                                icecream.ic(
+                                    "Не удалось получить название товара.")
                             if not sent_messages[user_id]:
                                 await bot.send_message(
                                     user_id,
-                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict["title"]}</a>\n закончился. Отслеживание прекратилось, пока товар не появится вновь.',
+                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict.get("title", "неизвестный товар")}</a>\n закончился. Отслеживание прекратилось, пока товар не появится вновь.',
                                 )
                                 sent_messages[user_id] = True
                             continue
