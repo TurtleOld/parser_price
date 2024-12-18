@@ -169,7 +169,8 @@ async def update_product_to_monitoring():
                             product.prices_history.append(new_price_history_entry)
 
                         except (IndexError, ValueError):
-                            product_title = product_name_dict.get("title", "Неизвестный товар")
+                            product_title = product_name_dict["title"]
+                            icecream.ic(product_title)
                             if not sent_messages[user_id]:
                                 await bot.send_message(
                                     user_id,
