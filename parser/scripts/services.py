@@ -103,8 +103,7 @@ async def update_product_to_monitoring():
 
                     if data:
                         parse = DictionaryParser(data)
-                        product_name = {}
-
+                        
                         try:
                             product_name_data = parse.find_key("webProductHeading-3385933-default-1")
                             image = parse.find_key("webGallery-3311629-default-1")
@@ -115,7 +114,6 @@ async def update_product_to_monitoring():
                             picture_dict = json.loads(image[0])
                             picture = picture_dict["images"][0]["src"]
                             product_name_dict = json.loads(product_name_data[0])
-                            product_name['title'] = product_name_dict['title']
                             f_key = parse.find_key("webPrice-3121879-default-1")
                             data_dict = json.loads(f_key[0])
 
@@ -170,7 +168,6 @@ async def update_product_to_monitoring():
                             product.prices_history.append(new_price_history_entry)
 
                         except (IndexError, ValueError):
-                            icecream.ic(product.product_name)
                             if not sent_messages[user_id]:
                                 await bot.send_message(
                                     user_id,
