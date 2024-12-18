@@ -80,9 +80,7 @@ async def add_product_to_monitoring(
 sent_messages = {}
 
 async def update_product_to_monitoring():
-    
     try:
-        
         async with AsyncSessionLocal() as session:
             results = await session.execute(
                 select(Message).options(
@@ -95,108 +93,86 @@ async def update_product_to_monitoring():
 
             for message in messages:
                 user_id = message.telegram_user_id
-                icecream.ic(sent_messages)
                 if user_id not in sent_messages:
                     sent_messages[user_id] = False
-                    icecream.ic(sent_messages)
+
                 for product in message.products:
                     url = message.url
                     data = await get_product_data(url)
+
                     if data:
                         parse = DictionaryParser(data)
-                        product_name_data = parse.find_key(
-                            "webProductHeading-3385933-default-1"
-                        )
-                        image = parse.find_key("webGallery-3311629-default-1")
-    
-                        picture_dict = json.loads(image[0])
-                        picture = picture_dict["images"][0]["src"]
-                        product_name_dict = json.loads(product_name_data[0])
-                        f_key = parse.find_key("webPrice-3121879-default-1")
-                        data_dict = json.loads(f_key[0])
-                        available = data_dict.get('isAvailable', None)
-                        price = clean_and_extract_price(
-                            data_dict.get(
-                                'price',
-                                None,
+
+                        try:
+                            product_name_data = parse.find_key("webProductHeading-3385933-default-1")
+                            image = parse.find_key("webGallery-3311629-default-1")
+
+                            if not product_name_data or not image:
+                                raise ValueError("Не удалось найти необходимые данные в ответе.")
+
+                            picture_dict = json.loads(image[0])
+                            picture = picture_dict["images"][0]["src"]
+                            product_name_dict = json.loads(product_name_data[0])
+                            f_key = parse.find_key("webPrice-3121879-default-1")
+                            data_dict = json.loads(f_key[0])
+
+                            available = data_dict.get('isAvailable', None)
+                            price = clean_and_extract_price(data_dict.get('price', None))
+                            card_price = clean_and_extract_price(data_dict.get('cardPrice', None))
+                            original_price = clean_and_extract_price(data_dict.get('originalPrice', None))
+
+                            if product.latest_price > price:
+                                decrease_price = float(product.latest_price) - float(price)
+                                percentage_decrease = (decrease_price / float(product.latest_price)) * 100
+                                message_text = (
+                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict["title"]}</a>\n\n'
+                                    f'Цена по карте Ozon: {card_price} ₽\n'
+                                    f'Обычная цена: {price} ₽\n\n'
+                                    f'Цена снизилась на {abs(decrease_price)} ₽ (&#9660; {abs(percentage_decrease):.2f}%)\n'
+                                )
+                                await bot.send_photo(
+                                    user_id,
+                                    photo=product.picture,
+                                    caption=message_text,
+                                    show_caption_above_media=True,
+                                )
+                            elif product.latest_price < price:
+                                increase_price = float(product.latest_price) - float(price)
+                                percentage_increase = (increase_price / float(product.latest_price)) * 100
+                                message_text = (
+                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict["title"]}</a>\n'
+                                    f'<b>Цена по карте Ozon:</b> {card_price} ₽\n'
+                                    f'<b>Обычная цена:</b> {price} ₽\n\n'
+                                    f'Цена повысилась на {abs(increase_price)} ₽ <span>&#9650; {abs(percentage_increase):.2f}%</span>\n'
+                                )
+                                await bot.send_photo(
+                                    user_id,
+                                    photo=product.picture,
+                                    caption=message_text,
+                                    show_caption_above_media=True,
+                                )
+
+                            product.latest_price = price
+                            product.latest_price_ozon = card_price
+                            product.original_price = original_price
+                            product.available = available
+                            product.picture = picture
+
+                            new_price_history_entry = PriceHistory(
+                                price=price,
+                                price_ozon=card_price,
+                                original_price=original_price,
+                                updated_at=datetime.now(),
                             )
-                        )
-                        card_price = clean_and_extract_price(
-                            data_dict.get(
-                                'cardPrice',
-                                None,
-                            )
-                        )
-                        original_price = clean_and_extract_price(
-                            data_dict.get(
-                                'originalPrice',
-                                None,
-                            )
-                        )
-    
-                        if product.latest_price > price:
-                            decrease_price = float(product.latest_price) - float(price)
-                            percentage_decrease = (
-                                decrease_price / float(product.latest_price)
-                            ) * 100
-                            message_text = (
-                                f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n\n'
-                                f'Цена по карте Ozon: {card_price} ₽\n'
-                                f'Обычная цена: {price} ₽\n\n'
-                                f'Цена снизилась на {abs(decrease_price)} ₽ (&#9660; {abs(percentage_decrease):.2f}%)\n'
-                            )
-                            await bot.send_photo(
-                                user_id,
-                                photo=product.picture,
-                                caption=message_text,
-                                show_caption_above_media=True,
-                            )
-                        elif product.latest_price < price:
-                            increase_price = float(product.latest_price) - float(
-                                price)
-                            percentage_increase = (increase_price / float(
-                                product.latest_price)) * 100
-                            message_text = (
-                                f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict['title']}</a>\n'
-                                f'<b>Цена по карте Ozon:</b> {card_price} ₽\n'
-                                f'<b>Обычная цена:</b> {price} ₽\n\n'
-                                f'Цена повысилась на {abs(increase_price)} ₽ <span>&#9650; {abs(percentage_increase):.2f}%</span>\n'
-                            )
-                            await bot.send_photo(
-                                user_id,
-                                photo=product.picture,
-                                caption=message_text,
-                                show_caption_above_media=True,
-                            )
-    
-                        product.latest_price = price
-                        product.latest_price_ozon = card_price
-                        product.original_price = original_price
-                        product.available = available
-                        product.picture = picture
-    
-                        new_price_history_entry = PriceHistory(
-                            price=price,
-                            price_ozon=card_price,
-                            original_price=original_price,
-                            updated_at=datetime.now(),
-                        )
-                        product.prices_history.append(new_price_history_entry)
+                            product.prices_history.append(new_price_history_entry)
+
+                        except (IndexError, ValueError) as e:
+                            print(f'Ошибка при обработке данных продукта {product.product_name}: {e}')
+                            continue
 
             await session.commit()
-    except IndexError:
-        icecream.ic(sent_messages)
-        if not sent_messages[user_id]:
-            await bot.send_message(
-                user_id,
-                'Товар закончился. Отслеживание прекратилось, пока товар не появится вновь.',
-            )
-            icecream.ic(sent_messages)
-            sent_messages[user_id] = True
-            icecream.ic(sent_messages)
-            
     except Exception as err:
-        print(f'Error update product {product.product_name}: {err}')
+        print(f'Ошибка обновления продукта: {err}')
     
 
 
