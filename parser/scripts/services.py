@@ -78,8 +78,9 @@ async def add_product_to_monitoring(
             return f"Произошла ошибка добавления товара {e}"
 
 
+
 async def update_product_to_monitoring():
-    sent = False
+    sent_messages = {}
     try:
         
         async with AsyncSessionLocal() as session:
@@ -94,6 +95,8 @@ async def update_product_to_monitoring():
 
             for message in messages:
                 user_id = message.telegram_user_id
+                if user_id not in sent_messages:
+                    sent_messages[user_id] = False
                 for product in message.products:
                     url = message.url
                     data = await get_product_data(url)
@@ -180,12 +183,12 @@ async def update_product_to_monitoring():
 
             await session.commit()
     except IndexError:
-        if not sent:
+        if not sent_messages[user_id]:
             await bot.send_message(
                 user_id,
-                'Товар закончился. Отслеживается прекратилось, пока товар не появится вновь.',
+                'Товар закончился. Отслеживание прекратилось, пока товар не появится вновь.',
             )
-            sent = True
+            sent_messages[user_id] = True
             
     except Exception as err:
         print(f'Error update product {product.product_name}: {err}')
