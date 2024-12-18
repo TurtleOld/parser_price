@@ -166,8 +166,13 @@ async def update_product_to_monitoring():
                             )
                             product.prices_history.append(new_price_history_entry)
 
-                        except (IndexError, ValueError) as e:
-                            print(f'Ошибка при обработке данных продукта {product.product_name}: {e}')
+                        except (IndexError, ValueError):
+                            if not sent_messages[user_id]:
+                                await bot.send_message(
+                                    user_id,
+                                    'Товар закончился. Отслеживание прекратилось, пока товар не появится вновь.',
+                                )
+                                sent_messages[user_id] = True
                             continue
 
             await session.commit()
