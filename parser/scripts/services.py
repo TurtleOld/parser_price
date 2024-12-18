@@ -143,7 +143,7 @@ async def update_product_to_monitoring():
                                     f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict["title"]}</a>\n'
                                     f'<b>Цена по карте Ozon:</b> {card_price} ₽\n'
                                     f'<b>Обычная цена:</b> {price} ₽\n\n'
-                                    f'Цена повысилась на {abs(increase_price)} ₽ <span>&#9650; {abs(percentage_increase):.2f}%</span>\n'
+                                    f'Цена повысилась на {abs(increase_price)} ₽ (&#9650; {abs(percentage_increase):.2f}%)\n'
                                 )
                                 await bot.send_photo(
                                     user_id,
