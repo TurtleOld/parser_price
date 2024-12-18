@@ -95,8 +95,10 @@ async def update_product_to_monitoring():
 
             for message in messages:
                 user_id = message.telegram_user_id
+                icecream.ic(sent_messages)
                 if user_id not in sent_messages:
                     sent_messages[user_id] = False
+                    icecream.ic(sent_messages)
                 for product in message.products:
                     url = message.url
                     data = await get_product_data(url)
@@ -183,12 +185,15 @@ async def update_product_to_monitoring():
 
             await session.commit()
     except IndexError:
+        icecream.ic(sent_messages)
         if not sent_messages[user_id]:
             await bot.send_message(
                 user_id,
                 'Товар закончился. Отслеживание прекратилось, пока товар не появится вновь.',
             )
+            icecream.ic(sent_messages)
             sent_messages[user_id] = True
+            icecream.ic(sent_messages)
             
     except Exception as err:
         print(f'Error update product {product.product_name}: {err}')
