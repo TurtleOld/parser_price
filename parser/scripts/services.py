@@ -77,6 +77,7 @@ async def add_product_to_monitoring(
             await session.rollback()
             return f"Произошла ошибка добавления товара {e}"
 
+
 sent_messages = {}
 
 async def update_product_to_monitoring():
@@ -102,6 +103,7 @@ async def update_product_to_monitoring():
 
                     if data:
                         parse = DictionaryParser(data)
+                        product_name_dict = {}
 
                         try:
                             product_name_data = parse.find_key("webProductHeading-3385933-default-1")
@@ -112,7 +114,7 @@ async def update_product_to_monitoring():
 
                             picture_dict = json.loads(image[0])
                             picture = picture_dict["images"][0]["src"]
-                            product_name_dict = json.loads(product_name_data[0])
+                            product_name_dict = json.loads(product_name_data[0])  # Инициализация для текущего продукта
                             f_key = parse.find_key("webPrice-3121879-default-1")
                             data_dict = json.loads(f_key[0])
 
@@ -165,18 +167,13 @@ async def update_product_to_monitoring():
                                 updated_at=datetime.now(),
                             )
                             product.prices_history.append(new_price_history_entry)
-                        
+
                         except (IndexError, ValueError):
-                            # Обработка ошибки
-                            if 'product_name_dict' in locals() and "title" in product_name_dict:
-                                icecream.ic(product_name_dict["title"])
-                            else:
-                                icecream.ic(
-                                    "Не удалось получить название товара.")
+                            product_title = product_name_dict.get("title", "Неизвестный товар")
                             if not sent_messages[user_id]:
                                 await bot.send_message(
                                     user_id,
-                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict.get("title", "неизвестный товар")}</a>\n закончился. Отслеживание прекратилось, пока товар не появится вновь.',
+                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_title}</a>\n закончился. Отслеживание прекратилось, пока товар не появится вновь.',
                                 )
                                 sent_messages[user_id] = True
                             continue
@@ -184,6 +181,7 @@ async def update_product_to_monitoring():
             await session.commit()
     except Exception as err:
         print(f'Ошибка обновления продукта: {err}')
+
     
 
 
