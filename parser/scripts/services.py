@@ -170,7 +170,7 @@ async def update_product_to_monitoring():
                             if not sent_messages[user_id]:
                                 await bot.send_message(
                                     user_id,
-                                    'Товар закончился. Отслеживание прекратилось, пока товар не появится вновь.',
+                                    f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict["title"]}</a>\n закончился. Отслеживание прекратилось, пока товар не появится вновь.',
                                 )
                                 sent_messages[user_id] = True
                             continue
