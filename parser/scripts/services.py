@@ -77,10 +77,10 @@ async def add_product_to_monitoring(
             await session.rollback()
             return f"Произошла ошибка добавления товара {e}"
 
-
+sent_messages = {}
 
 async def update_product_to_monitoring():
-    sent_messages = {}
+    
     try:
         
         async with AsyncSessionLocal() as session:
