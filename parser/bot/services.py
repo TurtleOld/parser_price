@@ -38,19 +38,28 @@ async def send_price_graph(chat_id, product_name, price_history, product_id):
 
     plt.figure(figsize=(10, 5))
     plt.plot(dates, prices, marker='o', label='Обычная цена')
-    plt.plot(dates, prices_ozon, marker='x', label='Цена по карте Озон')
+    plt.plot(dates, prices_ozon, marker='o', label='Цена по карте Озон')
     plt.title(product_name)
     plt.xlabel(period_text)
     plt.ylabel('Цена (₽)')
     plt.xticks(dates, [''] * len(dates))
-    plt.grid()
+
+    # Включаем сетку, показывающую только горизонтальные линии
+    plt.grid(axis='y', which='major')
+
     plt.legend()
     plt.tight_layout()
 
+    plt.gca().set_facecolor('none')
+    plt.gcf().patch.set_facecolor('none')
+    plt.tick_params(axis='x', which='both', bottom=False, top=False,
+                    labelbottom=False)
+
     buf = BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight')
+    plt.savefig(buf, format='png', bbox_inches='tight', facecolor='none')
     buf.seek(0)
     plt.close()
 
     keyboard = create_return_to_card_keyboard(product_id)
     await bot.send_photo(chat_id, photo=buf, reply_markup=keyboard)
+

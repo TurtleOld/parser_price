@@ -1,9 +1,6 @@
 import re
 import json
 from datetime import datetime
-
-import icecream
-
 from parser.bot.config import bot
 from parser.database.config import AsyncSessionLocal
 from parser.database.config import Message, PriceHistory, Product
