@@ -14,10 +14,10 @@ def clean_and_extract_price(price_string):
     try:
         if price_string:
             # Удаляем тонкие пробелы (\u2009)
-            cleaned_string = price_string.replace("\u2009", "")
+            cleaned_string = price_string.replace('\u2009', '')
 
             # Извлекаем числовую часть
-            number_part = "".join(re.findall(r"\d+", cleaned_string))
+            number_part = ''.join(re.findall(r'\d+', cleaned_string))
 
             # Преобразуем в число
             return int(number_part)
@@ -45,7 +45,7 @@ async def add_product_to_monitoring(
             )
             existing_product = existing_product.scalars().first()
             if existing_product:
-                return "Этот продукт уже добавлен на отслеживание."
+                return 'Этот продукт уже добавлен на отслеживание.'
 
             new_message = Message(
                 telegram_user_id=user_id,
@@ -68,14 +68,15 @@ async def add_product_to_monitoring(
             session.add(new_product)
             await session.commit()
             return (
-                f"<pre>{product_name}</pre> успешно добавлен на отслеживание."
+                f'<pre>{product_name}</pre> успешно добавлен на отслеживание.'
             )
         except Exception as e:
             await session.rollback()
-            return f"Произошла ошибка добавления товара {e}"
+            return f'Произошла ошибка добавления товара {e}'
 
 
 sent_messages = {}
+
 
 async def update_product_to_monitoring():
     try:
@@ -100,28 +101,44 @@ async def update_product_to_monitoring():
 
                     if data:
                         parse = DictionaryParser(data)
-                        
+
                         try:
-                            product_name_data = parse.find_key("webProductHeading-3385933-default-1")
-                            image = parse.find_key("webGallery-3311629-default-1")
+                            product_name_data = parse.find_key(
+                                'webProductHeading-3385933-default-1'
+                            )
+                            image = parse.find_key(
+                                'webGallery-3311629-default-1'
+                            )
 
                             if not product_name_data or not image:
-                                raise ValueError("Не удалось найти необходимые данные в ответе.")
+                                raise ValueError(
+                                    'Не удалось найти необходимые данные в ответе.'
+                                )
 
                             picture_dict = json.loads(image[0])
-                            picture = picture_dict["images"][0]["src"]
+                            picture = picture_dict['images'][0]['src']
                             product_name_dict = json.loads(product_name_data[0])
-                            f_key = parse.find_key("webPrice-3121879-default-1")
+                            f_key = parse.find_key('webPrice-3121879-default-1')
                             data_dict = json.loads(f_key[0])
 
                             available = data_dict.get('isAvailable', None)
-                            price = clean_and_extract_price(data_dict.get('price', None))
-                            card_price = clean_and_extract_price(data_dict.get('cardPrice', None))
-                            original_price = clean_and_extract_price(data_dict.get('originalPrice', None))
+                            price = clean_and_extract_price(
+                                data_dict.get('price', None)
+                            )
+                            card_price = clean_and_extract_price(
+                                data_dict.get('cardPrice', None)
+                            )
+                            original_price = clean_and_extract_price(
+                                data_dict.get('originalPrice', None)
+                            )
 
                             if product.latest_price > price:
-                                decrease_price = float(product.latest_price) - float(price)
-                                percentage_decrease = (decrease_price / float(product.latest_price)) * 100
+                                decrease_price = float(
+                                    product.latest_price
+                                ) - float(price)
+                                percentage_decrease = (
+                                    decrease_price / float(product.latest_price)
+                                ) * 100
                                 message_text = (
                                     f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict["title"]}</a>\n\n'
                                     f'Цена по карте Ozon: {card_price} ₽\n'
@@ -135,8 +152,12 @@ async def update_product_to_monitoring():
                                     show_caption_above_media=True,
                                 )
                             elif product.latest_price < price:
-                                increase_price = float(product.latest_price) - float(price)
-                                percentage_increase = (increase_price / float(product.latest_price)) * 100
+                                increase_price = float(
+                                    product.latest_price
+                                ) - float(price)
+                                percentage_increase = (
+                                    increase_price / float(product.latest_price)
+                                ) * 100
                                 message_text = (
                                     f'<b>Товар:</b> <a href="https://www.ozon.ru{product.url}">{product_name_dict["title"]}</a>\n'
                                     f'<b>Цена по карте Ozon:</b> {card_price} ₽\n'
@@ -162,7 +183,9 @@ async def update_product_to_monitoring():
                                 original_price=original_price,
                                 updated_at=datetime.now(),
                             )
-                            product.prices_history.append(new_price_history_entry)
+                            product.prices_history.append(
+                                new_price_history_entry
+                            )
 
                         except (IndexError, ValueError):
                             if not sent_messages[user_id]:
@@ -177,27 +200,25 @@ async def update_product_to_monitoring():
     except Exception as err:
         print(f'Ошибка обновления продукта: {err}')
 
-    
-
 
 def format_product_info(product):
     product_name = (
-        product.product_name if product.product_name else "Неизвестный товар"
+        product.product_name if product.product_name else 'Неизвестный товар'
     )
     price = (
         product.latest_price
         if product.latest_price is not None
-        else "Неизвестная цена"
+        else 'Неизвестная цена'
     )
     ozon_price = (
         product.latest_price_ozon
         if product.latest_price_ozon is not None
-        else "Неизвестная цена"
+        else 'Неизвестная цена'
     )
     original_price = (
         product.original_price
         if product.original_price is not None
-        else "Неизвестная цена"
+        else 'Неизвестная цена'
     )
 
     return f"""

@@ -30,7 +30,7 @@ async def send_price_graph(chat_id, product_name, price_history, product_id):
         start_date = datetime.datetime.now().strftime('%d.%m.%Y')
         end_date = datetime.datetime.now().strftime('%d.%m.%Y')
 
-    period_text = f"Период отслеживания с {start_date} по {end_date}"
+    period_text = f'Период отслеживания с {start_date} по {end_date}'
 
     dates = [d.strftime('%d-%m-%Y %H:%M') for d, _, _ in price_history]
     prices = [p for _, p, _ in price_history]
@@ -52,8 +52,9 @@ async def send_price_graph(chat_id, product_name, price_history, product_id):
 
     plt.gca().set_facecolor('none')
     plt.gcf().patch.set_facecolor('none')
-    plt.tick_params(axis='x', which='both', bottom=False, top=False,
-                    labelbottom=False)
+    plt.tick_params(
+        axis='x', which='both', bottom=False, top=False, labelbottom=False
+    )
 
     buf = BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight', facecolor='none')
@@ -62,4 +63,3 @@ async def send_price_graph(chat_id, product_name, price_history, product_id):
 
     keyboard = create_return_to_card_keyboard(product_id)
     await bot.send_photo(chat_id, photo=buf, reply_markup=keyboard)
-

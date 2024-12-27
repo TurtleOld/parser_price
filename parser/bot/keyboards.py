@@ -7,13 +7,10 @@ def create_product_keyboard(product_id):
         callback_data=f'view_graph_{product_id}',
     )
     remove_product_button = InlineKeyboardButton(
-        text='Удалить товар',
-        callback_data=f'remove_product_{product_id}'
+        text='Удалить товар', callback_data=f'remove_product_{product_id}'
     )
     keyboard = InlineKeyboardMarkup(
-        [
-            [button_view_graph, remove_product_button]
-        ]
+        [[button_view_graph, remove_product_button]]
     )
     return keyboard
 

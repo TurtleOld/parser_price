@@ -15,7 +15,11 @@ from parser.scripts.services import clean_and_extract_price
 from typing import Any
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
-from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
+from telebot.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    CallbackQuery,
+)
 
 
 @bot.message_handler(commands=['start'])
@@ -173,17 +177,24 @@ async def callback_remove_product(call: CallbackQuery):
         product = result.scalars().first()
 
         if product is not None:
-            await session.execute(delete(PriceHistory).where(
-                PriceHistory.product_id == product_id))
+            await session.execute(
+                delete(PriceHistory).where(
+                    PriceHistory.product_id == product_id
+                )
+            )
 
             await session.delete(product)
             await bot.delete_message(user_id, call.message.id)
             await session.commit()
-            await bot.answer_callback_query(callback_query_id=call.id,
-                                            text="Товар удален.",)
+            await bot.answer_callback_query(
+                callback_query_id=call.id,
+                text='Товар удален.',
+            )
         else:
-            await bot.answer_callback_query(callback_query_id=call.id,
-                                            text="Не удалось найти товар.",)
+            await bot.answer_callback_query(
+                callback_query_id=call.id,
+                text='Не удалось найти товар.',
+            )
 
 
 @bot.message_handler(content_types=['text'])
@@ -225,7 +236,7 @@ async def get_url(message):
         await bot.send_message(user_id, 'Не удалось найти информацию о цене.')
         return
     data_dict = json.loads(price_data[0])
-    name_store = parse.find_key("webStickyProducts-726428-default-1")
+    name_store = parse.find_key('webStickyProducts-726428-default-1')
     store = json.loads(name_store[0]).get('seller', None).get('name', None)
     available = data_dict.get('isAvailable', None)
     price = clean_and_extract_price(data_dict.get('price', None))
